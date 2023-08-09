@@ -1,0 +1,39 @@
+plugins {
+    id 'org.jetbrains.intellij' version '1.15.0'
+    id 'java'
+    id 'io.freefair.lombok' version "8.1.0"
+}
+configurations.all {
+    exclude group: 'org.slf4j', module: 'slf4j-binding'
+}
+group 'com.denizyamac'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+}
+// See https://github.com/JetBrains/gradle-intellij-plugin/
+intellij {
+    version = '2021.2.4'
+}
+
+patchPluginXml {
+    changeNotes = """
+    <div>
+        <h2>Version 1.0.0:</h2>
+        <ul>
+            <li>Added feature A</li>
+            <li>Fixed bug B</li>
+        </ul>
+    </div>
+"""
+}
+test {
+    useJUnitPlatform()
+}
+

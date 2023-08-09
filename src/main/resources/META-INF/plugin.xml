@@ -1,0 +1,22 @@
+<idea-plugin>
+    <id>com.denizyamac.sync-templates-plugin</id>
+    <name>Sync Templates</name>
+    <vendor email="ydenizyamac@gmail.com">denizyamac</vendor>
+
+    <description>Sync the template files inside of your repository</description>
+
+    <!-- please see https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html
+         on how to target different products -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Add your extensions here -->
+        <!--<configurationType implementation="com.denizyamac.synctemplates.config.PluginConfigurationOptions"/>-->
+        <applicationConfigurable instance="com.denizyamac.synctemplates.config.PluginConfigurable"/>
+        <postStartupActivity implementation="com.denizyamac.synctemplates.activity.ProjectOpenActivity"/>
+    </extensions>
+
+    <actions>
+        <!-- Add your actions here -->
+    </actions>
+</idea-plugin>
