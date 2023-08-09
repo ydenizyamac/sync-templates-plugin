@@ -7,7 +7,7 @@ configurations.all {
     exclude group: 'org.slf4j', module: 'slf4j-binding'
 }
 group 'com.denizyamac'
-version '0.0.1-SNAPSHOT'
+version '0.0.2-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -19,7 +19,7 @@ dependencies {
 }
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
-    version = '2021.2.4'
+    version = '2021.2'
 }
 
 patchPluginXml {
@@ -28,6 +28,12 @@ patchPluginXml {
         <h2>Version 0.0.1:</h2>
         <ul>
             <li>First release, you can set your repository url in the plugin settings to get templates from and use the plugin to sync the templates into idea ide.</li>            
+        </ul>
+    </div>
+    <div>
+        <h2>Version 0.0.2:</h2>
+        <ul>
+            <li>Add Intellij Idea 2021.2 (Build #IC-212.4746.92) support</li>            
         </ul>
     </div>
 """
