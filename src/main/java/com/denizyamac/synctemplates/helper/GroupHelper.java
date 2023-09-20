@@ -1,6 +1,7 @@
 package com.denizyamac.synctemplates.helper;
 
 import com.denizyamac.synctemplates.action.DynamicCreateFileTemplateAction;
+import com.denizyamac.synctemplates.action.SearchAction;
 import com.denizyamac.synctemplates.action.UpdateTemplatesAction;
 import com.denizyamac.synctemplates.config.PluginSettings;
 import com.denizyamac.synctemplates.constants.PluginConstants;
@@ -165,10 +166,13 @@ public class GroupHelper {
             actionManager.registerAction(PluginConstants.PLUGIN_ACTION_GROUP, mainGroup);
 
             mainMenu.add(mainGroup);
-            var icon = getIconFromResource("update.png");
-            UpdateTemplatesAction newAction = new UpdateTemplatesAction(PluginConstants.PLUGIN_UPDATE_TEMPLATES_ACTION_TEXT, icon);
-            actionManager.registerAction(PluginConstants.PLUGIN_UPDATE_TEMPLATES_ACTION, newAction);
-            mainGroup.add(newAction);
+            var updateIcon = getIconFromResource("update.png");
+            UpdateTemplatesAction updateAction = new UpdateTemplatesAction(PluginConstants.PLUGIN_UPDATE_TEMPLATES_ACTION_TEXT, updateIcon);
+            actionManager.registerAction(PluginConstants.PLUGIN_SEARCH_TEMPLATES_ACTION, updateAction);
+            var searchIcon = getIconFromResource("search.png");
+            SearchAction searchAction = new SearchAction(PluginConstants.PLUGIN_SEARCH_TEMPLATES_ACTION_TEXT, searchIcon);
+            actionManager.registerAction(PluginConstants.PLUGIN_UPDATE_TEMPLATES_ACTION, searchAction);
+            mainGroup.add(searchAction);
         }
 
     }
@@ -197,6 +201,7 @@ public class GroupHelper {
                 };
                 addSynonyms(action, item.getSynonyms());
                 actionManager.registerAction(item.getId(), action);
+
             }
             return action;
         }

@@ -9,6 +9,8 @@ public class PluginConstants {
     public static final String PLUGIN_ACTION_GROUP = "TemplateGeneratorActionGroup";
     public static final String PLUGIN_UPDATE_TEMPLATES_ACTION = "UpdateTemplatesAction";
     public static final String PLUGIN_UPDATE_TEMPLATES_ACTION_TEXT = "Update Templates";
+    public static final String PLUGIN_SEARCH_TEMPLATES_ACTION = "SearchTemplatesAction";
+    public static final String PLUGIN_SEARCH_TEMPLATES_ACTION_TEXT = "Search Templates";
     public static String pluginUpdateTemplatesActionText = "Sync Templates";
     public static String actionIdPrefix;
     public static final String ICON_FOLDER = "/icon/";
