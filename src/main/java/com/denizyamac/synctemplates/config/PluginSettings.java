@@ -32,6 +32,7 @@ public class PluginSettings {
         var menuList = String.join(",", menus);
         PropertiesComponent.getInstance().setValue(PluginConstants.PLUGIN_PARENT_MENU_LIST_KEY, menuList);
     }
+
     public static PluginConfig getConfig() {
         var config = PropertiesComponent.getInstance().getValue(PluginConstants.PLUGIN_CONFIG_KEY);
         if (config != null && JsonHelper.isValidJson(config)) return StringExtension.toConfig(config);
@@ -42,6 +43,7 @@ public class PluginSettings {
         var propertiesComponent = PropertiesComponent.getInstance();
         propertiesComponent.setValue(PluginConstants.PLUGIN_CONFIG_KEY, config.toString());
     }
+
     public static String[] getParentMenus() {
         var menuList = PropertiesComponent.getInstance().getValue(PluginConstants.PLUGIN_PARENT_MENU_LIST_KEY);
         if (menuList != null) {
@@ -55,11 +57,19 @@ public class PluginSettings {
         if (list == null) {
             list = new String[]{menu};
         } else {
-            if(java.util.Arrays.stream(list).noneMatch(p->p.equals(menu))){
+            if (java.util.Arrays.stream(list).noneMatch(p -> p.equals(menu))) {
                 list = Arrays.append(list, menu);
             }
         }
         setParentMenus(list);
+    }
+
+    public static void addIcon(String name, String b64) {
+        PropertiesComponent.getInstance().setValue(name, b64);
+    }
+
+    public static String getIcon(String name) {
+        return PropertiesComponent.getInstance().getValue(name);
     }
 
 }

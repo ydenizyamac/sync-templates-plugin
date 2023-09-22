@@ -1,6 +1,5 @@
 package com.denizyamac.synctemplates.action;
 
-import com.denizyamac.synctemplates.ui.Presenter;
 import com.denizyamac.synctemplates.ui.View;
 import com.intellij.ide.projectView.ProjectView;
 import com.intellij.openapi.actionSystem.AnAction;
@@ -29,7 +28,8 @@ public class SearchAction extends AnAction {
                 selectedPackageName.append(".").append(treePath.getPath()[i]);
             }
             View view = new View();
-            new Presenter(view, selectedPackageName.toString(), projectPath);
+            view.pack();
+            view.show();
         }
 
     }

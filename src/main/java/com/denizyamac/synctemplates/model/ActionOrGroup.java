@@ -47,4 +47,8 @@ public class ActionOrGroup {
         return PluginConstants.Helper.getActionId(path.replace(" ", "").replace("/", ""));
     }
 
+    public boolean isAction() {
+        return this.children == null || this.children.size() == 0;
+    }
+
 }
