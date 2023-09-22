@@ -1,5 +1,7 @@
 package com.denizyamac.synctemplates.model;
 
+import com.denizyamac.synctemplates.constants.PluginConstants;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 

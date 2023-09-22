@@ -1,5 +1,6 @@
 package com.denizyamac.synctemplates.helper;
 
+import com.denizyamac.synctemplates.config.PluginSettings;
 import com.denizyamac.synctemplates.constants.PluginConstants;
 import com.denizyamac.synctemplates.model.PluginConfig;
 import com.denizyamac.synctemplates.model.Template;
@@ -8,10 +9,12 @@ import com.intellij.ide.fileTemplates.FileTemplateManager;
 import com.intellij.ide.fileTemplates.FileTemplateUtil;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.util.ArrayUtil;
+import org.apache.commons.net.util.Base64;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -161,12 +164,27 @@ public class TemplateHelper {
         return null;
     }
 
+    private static String getBase64EncodedImage(String imageURL) throws IOException {
+        java.net.URL url = new java.net.URL(imageURL);
+        InputStream is = url.openStream();
+        byte[] bytes = org.apache.commons.io.IOUtils.toByteArray(is);
+        return Base64.encodeBase64String(bytes);
+    }
 
     public static Icon getIcon(String name) {
 
         try {
-            URL url = new URL(PluginConstants.Helper.getFileUrl(name));
+           /* URL url = new URL(PluginConstants.Helper.getFileUrl(name));
             Image image = ImageIO.read(url);
+
+            return new ImageIcon(image);*/
+            String icon = PluginSettings.getIcon(name);
+            if (icon == null) {
+                icon = getBase64EncodedImage(PluginConstants.Helper.getFileUrl(name));
+                PluginSettings.addIcon(name, icon);
+            }
+            byte[] btDataFile = Base64.decodeBase64(icon);
+            BufferedImage image = ImageIO.read(new ByteArrayInputStream(btDataFile));
             return new ImageIcon(image);
         } catch (IOException e) {
             e.printStackTrace();

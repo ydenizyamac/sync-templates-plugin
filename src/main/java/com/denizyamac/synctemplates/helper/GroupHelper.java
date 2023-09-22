@@ -1,12 +1,15 @@
 package com.denizyamac.synctemplates.helper;
 
 import com.denizyamac.synctemplates.action.DynamicCreateFileTemplateAction;
+import com.denizyamac.synctemplates.action.SearchAction;
 import com.denizyamac.synctemplates.action.UpdateTemplatesAction;
 import com.denizyamac.synctemplates.config.PluginSettings;
 import com.denizyamac.synctemplates.constants.PluginConstants;
 import com.denizyamac.synctemplates.model.ActionOrGroup;
 import com.denizyamac.synctemplates.model.ActionOrGroupTypeEnum;
 import com.denizyamac.synctemplates.model.Template;
+import com.denizyamac.synctemplates.ui.CellRenderer;
+import com.denizyamac.synctemplates.ui.TemplateTreeModel;
 import com.intellij.ide.actions.CreateFileFromTemplateDialog;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.ActionPlaces;
@@ -14,8 +17,11 @@ import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiDirectory;
+import com.intellij.ui.treeStructure.Tree;
 
 import javax.swing.*;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreeSelectionModel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -152,6 +158,45 @@ public class GroupHelper {
         }
     }
 
+    public static Tree generateTree(Template[] templates) {
+        var groupStructure = generateGroupStructure(templates);
+        var actionManager = ActionManager.getInstance();
+        List<ActionOrGroup> roots = new ArrayList<ActionOrGroup>();
+        TemplateTreeModel treeModel = new TemplateTreeModel();
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Templates");
+
+        if (groupStructure.stream().filter(p -> p.getType() == ActionOrGroupTypeEnum.GROUP).count() > 1) {
+            treeModel.addNode(root);
+        }
+        for (var i = 0; i < groupStructure.size(); i++) {
+            var item = groupStructure.get(i);
+            if (item.getType() == ActionOrGroupTypeEnum.GROUP) {
+
+                //DefaultActionGroup grp = (DefaultActionGroup) actionManager.getAction(item.getId());
+
+                //AbstractMap.SimpleEntry<String, DefaultActionGroup> entry = new AbstractMap.SimpleEntry<>(item.getName(), grp);
+                DefaultMutableTreeNode grpNode = generateTreeNode(item);
+                var children = item.getChildren();
+                for (var child : children) {
+                    //AnAction childGrp = (AnAction) actionManager.getAction(child.getId());
+                    //AbstractMap.SimpleEntry<String, AnAction> childEntry = new AbstractMap.SimpleEntry<>(child.getName(), childGrp);
+                    grpNode.add(generateTreeNode(child));
+                }
+                if (groupStructure.stream().filter(p -> p.getType() == ActionOrGroupTypeEnum.GROUP).count() > 1) {
+
+                    root.add(grpNode);
+                } else {
+                    treeModel.addNode(grpNode);
+                }
+
+            }
+        }
+        Tree tree = groupStructure.size() > 0 ? new Tree(treeModel) : new Tree();
+        tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+        tree.setCellRenderer(new CellRenderer());
+        return tree;
+    }
+
     private static Icon getIconFromResource(String name) {
         var iconPath = GroupHelper.class.getResource(PluginConstants.ICON_FOLDER + name);
         return new ImageIcon(iconPath);
@@ -165,12 +210,25 @@ public class GroupHelper {
             actionManager.registerAction(PluginConstants.PLUGIN_ACTION_GROUP, mainGroup);
 
             mainMenu.add(mainGroup);
-            var icon = getIconFromResource("update.png");
-            UpdateTemplatesAction newAction = new UpdateTemplatesAction(PluginConstants.PLUGIN_UPDATE_TEMPLATES_ACTION_TEXT, icon);
-            actionManager.registerAction(PluginConstants.PLUGIN_UPDATE_TEMPLATES_ACTION, newAction);
-            mainGroup.add(newAction);
+            var updateIcon = getIconFromResource("update.png");
+            UpdateTemplatesAction updateAction = new UpdateTemplatesAction(PluginConstants.PLUGIN_UPDATE_TEMPLATES_ACTION_TEXT, updateIcon);
+            actionManager.registerAction(PluginConstants.PLUGIN_UPDATE_TEMPLATES_ACTION, updateAction);
+            mainGroup.add(updateAction);
+
+            var searchIcon = getIconFromResource("search.png");
+            var cutCopyPasteGroupName = "CutCopyPasteGroup";
+            var cutCopyPasteGroup = (DefaultActionGroup) actionManager.getAction(cutCopyPasteGroupName);
+
+            SearchAction searchAction = new SearchAction(PluginConstants.PLUGIN_SEARCH_TEMPLATES_ACTION_TEXT, searchIcon);
+            actionManager.registerAction(PluginConstants.PLUGIN_SEARCH_TEMPLATES_ACTION, searchAction);
+            cutCopyPasteGroup.add(searchAction);
+            mainGroup.add(searchAction);
         }
 
+    }
+
+    private static DefaultMutableTreeNode generateTreeNode(Object item) {
+        return new DefaultMutableTreeNode(item);
     }
 
     private static Object generateGroup(ActionOrGroup item) {
@@ -197,6 +255,7 @@ public class GroupHelper {
                 };
                 addSynonyms(action, item.getSynonyms());
                 actionManager.registerAction(item.getId(), action);
+
             }
             return action;
         }
