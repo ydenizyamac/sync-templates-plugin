@@ -4,7 +4,8 @@ import com.denizyamac.synctemplates.config.PluginSettings;
 import com.denizyamac.synctemplates.constants.PluginConstants;
 import com.denizyamac.synctemplates.helper.GroupHelper;
 import com.denizyamac.synctemplates.helper.TemplateHelper;
-import com.denizyamac.synctemplates.model.PluginConfig;
+import com.denizyamac.synctemplates.model.Template;
+import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.StartupActivity;
 import com.intellij.openapi.ui.Messages;
@@ -19,16 +20,17 @@ public class ProjectOpenActivity implements StartupActivity.DumbAware {
         PluginSettings.setConfigFileName(PluginConstants.CONFIG_FILE_NAME);
         GroupHelper.createMainMenu();
 
-        var config = PluginSettings.getConfig();
-        if (config == null) {
-            config = TemplateHelper.readFromUrl(PluginConstants.Helper.getConfigUrl(), PluginConfig.class);
-        }
-        if (config != null) {
-            PluginSettings.setConfig(config);
-            TemplateHelper.addAllTemplatesAndGroups(config);
-        } /*else SwingUtilities.invokeLater(() -> {
-            Messages.showErrorDialog("Please check config file", "Config Error");
-        });*/
-
+        var directorships = TemplateHelper.getDirectorships(false);
+        if (directorships != null) {
+            Template[] templates = PluginSettings.getTemplates();
+            if (templates == null) {
+                templates = TemplateHelper.getAllTemplates(directorships);
+            }
+            if (templates != null) {
+                TemplateHelper.addAllTemplatesAndGroups(directorships);
+            }
+        } else SwingUtilities.invokeLater(() -> {
+            Messages.showErrorDialog("Please Check Config File", "Config Error");
+        });
     }
 }

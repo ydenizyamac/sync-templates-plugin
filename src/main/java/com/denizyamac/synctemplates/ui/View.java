@@ -5,9 +5,10 @@ import com.denizyamac.synctemplates.constants.PluginConstants;
 import com.denizyamac.synctemplates.helper.GroupHelper;
 import com.denizyamac.synctemplates.model.ActionOrGroup;
 import com.denizyamac.synctemplates.model.Template;
-import com.intellij.ide.DataManager;
-import com.intellij.ide.IdeView;
-import com.intellij.openapi.actionSystem.*;
+import com.intellij.openapi.actionSystem.ActionManager;
+import com.intellij.openapi.actionSystem.AnAction;
+import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.treeStructure.Tree;
@@ -36,7 +37,7 @@ public class View extends DialogWrapper {
     @Setter
     private DataContext dataContext;
 
-    public View() {
+    public View(AnActionEvent e) {
         super(true);
         setTitle("Templates");
         setSize(650, 500);
@@ -45,15 +46,15 @@ public class View extends DialogWrapper {
         //Project project = (Project) DataManager.getInstance().getDataContext().getData(LangDataKeys.PROJECT);
         //JComponent c = FileEditorManager.getInstance(openProject).getSelectedEditor().getComponent();
 
-
+        setDataContext(e.getDataContext());
         //IdeFocusManager.getInstance(openProject).requestFocus(c, true);
-        DataManager.getInstance().getDataContextFromFocusAsync().then(p -> {
+        /*DataManager.getInstance().getDataContextFromFocusAsync().then(p -> {
             final IdeView view = LangDataKeys.IDE_VIEW.getData(p);
             if (view != null) {
                 setDataContext(p);
             }
             return p;
-        });
+        });*/
 
     }
 
@@ -86,7 +87,7 @@ public class View extends DialogWrapper {
 
 
         scrollPane = new JBScrollPane();
-        scrollPane.setBounds(0,120,300, 300);
+        scrollPane.setBounds(0, 120, 300, 300);
 
         JLabel searchLabel = new JLabel("Search  ");
         searchLabel.setIcon(getIconFromResource("search.png"));
@@ -97,7 +98,7 @@ public class View extends DialogWrapper {
         searchLabel.setHorizontalTextPosition(SwingConstants.LEFT);
 
         searchTextField = new JTextField();
-        searchTextField.setBounds(0,60,300, 40);
+        searchTextField.setBounds(0, 60, 300, 40);
         c.anchor = GridBagConstraints.CENTER;
         c.fill = GridBagConstraints.HORIZONTAL;
         c.gridx = 0;
@@ -116,8 +117,8 @@ public class View extends DialogWrapper {
         c.gridy = 3;
         c.weightx = 1;
         c.weighty = 1;
-        scrollPane.setMinimumSize(new Dimension(300,300));
-        jPanel.add(scrollPane,c);
+        scrollPane.setMinimumSize(new Dimension(300, 300));
+        jPanel.add(scrollPane, c);
         // Set the minimum size of the JPanel.
         jPanel.setMinimumSize(new Dimension(300, 420));
         // Set the preferred size of the JPanel.
@@ -195,7 +196,7 @@ public class View extends DialogWrapper {
 
     @Override
     public void show() {
-        Template[] templates = PluginSettings.getConfig().getTemplateList();
+        Template[] templates = PluginSettings.getTemplates();
         setTree(templates);
         setOnKeyPress(this::search);
         super.show();
@@ -204,7 +205,7 @@ public class View extends DialogWrapper {
     private void search() {
         //clearTree();
         String text = getSearchTextField().getText();
-        Template[] templates = Arrays.stream(PluginSettings.getConfig().getTemplateList()).filter(p -> StringUtil.containsIgnoreCase(p.getGroup(), text)).toArray(Template[]::new);
+        Template[] templates = Arrays.stream(PluginSettings.getTemplates()).filter(p -> StringUtil.containsIgnoreCase(p.getGroup(), text)).toArray(Template[]::new);
         setTree(templates);
     }
 

@@ -2,19 +2,19 @@ package com.denizyamac.synctemplates.helper;
 
 import com.denizyamac.synctemplates.config.PluginSettings;
 import com.denizyamac.synctemplates.constants.PluginConstants;
-import com.denizyamac.synctemplates.model.PluginConfig;
+import com.denizyamac.synctemplates.model.Directorship;
+import com.denizyamac.synctemplates.model.Management;
 import com.denizyamac.synctemplates.model.Template;
 import com.intellij.ide.fileTemplates.FileTemplate;
 import com.intellij.ide.fileTemplates.FileTemplateManager;
 import com.intellij.ide.fileTemplates.FileTemplateUtil;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.util.ArrayUtil;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.apache.commons.net.util.Base64;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -25,54 +25,87 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TemplateHelper {
-    public static void addAllTemplatesAndGroups(PluginConfig pluginConfig) {
-        if (pluginConfig != null) {
-            Template[] templates = pluginConfig.getTemplateList();
-            PluginConstants.Helper.setPluginConstants(pluginConfig);
-            FileTemplateManager fileTemplateManager = FileTemplateManager.getDefaultInstance();
-            //List<FileTemplate> fileTemplates = new ArrayList<FileTemplate>();
-            FileTemplate[] fileTemplates = fileTemplateManager.getInternalTemplates();
+    public static void addAllTemplatesAndGroups(Directorship[] directorships) {
+        if (directorships != null) {
+            var templates = PluginSettings.getTemplates();
             if (templates != null) {
+                FileTemplateManager fileTemplateManager = FileTemplateManager.getDefaultInstance();
+                FileTemplate[] fileTemplates = fileTemplateManager.getInternalTemplates();
                 for (var templateItem : templates) {
                     String templateName = templateItem.getTemplateName();
                     String templateExtension = templateItem.getTemplateExtension();
+                    String templateStr = PluginSettings.getTemplateContent(templateName);
+                    if (templateStr == null) {
+                        templateStr = TemplateHelper.readStringFromUrl(PluginConstants.Helper.getFileUrl(templateItem.getDirectorshipPath(), templateItem.getManagementPath(), templateName, templateExtension));
+                    }
 
-                    String templateStr = TemplateHelper.readStringFromUrl(PluginConstants.Helper.getFileUrl(templateName) + "." + templateExtension);
-
-                    if (Arrays.stream(fileTemplates).noneMatch(p -> p.getName().equals(templateName))) {
-                        if (templateStr != null && !templateStr.isBlank() && !templateStr.isEmpty()) {
-                            var template = FileTemplateUtil.createTemplate(templateName, templateExtension, templateStr, fileTemplates);
-
-                            //FileTemplateConfigurable configurable = new FileTemplateConfigurable(project);
-                            //configurable.setProportion(0.6f);
-                            //configurable.setTemplate(template, FileTemplateManagerImpl.getInstanceImpl(project).getDefaultTemplateDescription());
-                            //fileTemplates.add(template);
-                            //var template = fileTemplateManager.addTemplate(templateName, templateExtension);
-                            //template.setText(templateStr);
-                            //template.setExtension(templateExtension);
-                            //template.setFileName("${NAME}");
-                            //fileTemplates.add(template);
-                            fileTemplates = ArrayUtil.append(fileTemplates, template);
+                    if (templateStr != null) {
+                        PluginSettings.setTemplateContent(templateName, templateStr);
+                        if (Arrays.stream(fileTemplates).noneMatch(p -> p.getName().equals(templateName))) {
+                            if (!templateStr.isBlank() && !templateStr.isEmpty()) {
+                                var template = FileTemplateUtil.createTemplate(templateName, templateExtension, templateStr, fileTemplates);
+                                fileTemplates = ArrayUtil.append(fileTemplates, template);
+                            }
                         }
                     }
                 }
                 fileTemplateManager.setTemplates(FileTemplateManager.INTERNAL_TEMPLATES_CATEGORY, Arrays.asList(fileTemplates));
                 fileTemplateManager.saveAllTemplates();
                 GroupHelper.generateGroups(templates);
-                if (SwingUtilities.isEventDispatchThread()) {
+                /*if (SwingUtilities.isEventDispatchThread()) {
                     Messages.showInfoMessage("TemplatesUpdated", "Info");
                 } else {
                     SwingUtilities.invokeLater(() -> {
                         Messages.showInfoMessage("TemplatesUpdated", "Info");
                     });
-                }
+                }*/
+            } else {
+                SwingUtilities.invokeLater(() -> {
+                    Messages.showInfoMessage("Could not get templates", "Warning");
+                });
             }
-
-
         }
+    }
+
+    public static Directorship[] getDirectorships(boolean forceUpdate) {
+        var directorships = PluginSettings.getConfig();
+        if (directorships == null || Boolean.TRUE.equals(forceUpdate)) {
+            directorships = TemplateHelper.readFromUrl(PluginConstants.Helper.getConfigUrl(), Directorship[].class);
+            PluginSettings.setConfig(directorships);
+            return directorships;
+        }
+        return directorships;
+
+    }
+
+    public static Template[] getAllTemplates(Directorship[] directorships) {
+        Template[] templates;
+        List<Template> templateList = new ArrayList<>();
+        for (Directorship directorship : directorships) {
+            Management[] managements = directorship.getManagements();
+            for (var management : managements) {
+                //TODO: make it async call
+                templates = TemplateHelper.readFromUrl(PluginConstants.Helper.getTemplatesUrl(directorship.getPath(), management.getPath()), Template[].class);
+                List<Template> _templateList = Arrays.stream(templates).peek(p -> {
+                    p.setDirectorship(directorship.getName());
+                    p.setDirectorshipPath(directorship.getPath());
+                    p.setManagement(management.getName());
+                    p.setManagementPath(management.getPath());
+                    p.setManagementSynonyms(management.getSynonyms());
+                }).collect(Collectors.toList());
+                templateList.addAll(_templateList);
+            }
+        }
+        templates = templateList.toArray(Template[]::new);
+        PluginSettings.setTemplates(templates);
+        return templates;
     }
 
     public static String doCall(String url) {
@@ -89,6 +122,9 @@ public class TemplateHelper {
                     HttpResponse.BodyHandlers.ofString());
             return response.body();
         } catch (IOException | InterruptedException e) {
+            SwingUtilities.invokeLater(() -> {
+                Messages.showErrorDialog("ERROR", e.getMessage());
+            });
             e.printStackTrace();
             return null;
         }
@@ -110,52 +146,6 @@ public class TemplateHelper {
         }
     }
 
-    /* public static String getTextFromURL(String urlString) {
-         try {
-             // Create a URL object
-             URL url = new URL(urlString);
-
-             // Open a connection to the URL
-             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-
-             // Set request method
-             connection.setRequestMethod("GET");
-             connection.setUseCaches(false);
-             connection.setRequestProperty("Cache-Control", "no-cache");
-             connection.setRequestProperty("Connection", "close");
-
-             // Get the response code
-             int responseCode = connection.getResponseCode();
-
-             // If the response code indicates a successful connection (e.g., 200 for HTTP_OK)
-             if (responseCode == HttpURLConnection.HTTP_OK) {
-                 // Create a BufferedReader to read the response
-                 BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                 StringBuilder stringBuilder = new StringBuilder();
-                 String line;
-
-                 // Read each line of the response and append it to the StringBuilder
-                 while ((line = reader.readLine()) != null) {
-                     stringBuilder.append(line);
-                     stringBuilder.append(System.lineSeparator());
-                 }
-
-                 // Close the reader
-                 reader.close();
-
-                 // Return the text content
-                 return stringBuilder.toString();
-             } else {
-                 // Handle the error response if needed
-                 System.out.println("HTTP error code: " + responseCode);
-             }
-         } catch (Exception e) {
-             e.printStackTrace();
-         }
-
-         return null;
-     }
- */
     public static <T> T readFromUrl(String url, Class<T> type) {
         String str = doCall(url);
         if (str != null) {
@@ -170,14 +160,10 @@ public class TemplateHelper {
         byte[] bytes = org.apache.commons.io.IOUtils.toByteArray(is);
         return Base64.encodeBase64String(bytes);
     }
-
+/*
     public static Icon getIcon(String name) {
 
         try {
-           /* URL url = new URL(PluginConstants.Helper.getFileUrl(name));
-            Image image = ImageIO.read(url);
-
-            return new ImageIcon(image);*/
             String icon = PluginSettings.getIcon(name);
             if (icon == null) {
                 icon = getBase64EncodedImage(PluginConstants.Helper.getFileUrl(name));
@@ -191,4 +177,6 @@ public class TemplateHelper {
             return null;
         }
     }
+    */
+
 }
