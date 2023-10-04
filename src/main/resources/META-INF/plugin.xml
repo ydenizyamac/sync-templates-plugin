@@ -1,4 +1,4 @@
-<idea-plugin>
+<idea-plugin require-restart="true">
     <id>com.denizyamac.sync-templates-plugin</id>
     <name>Sync Templates</name>
     <vendor email="ydenizyamac@gmail.com">denizyamac</vendor>

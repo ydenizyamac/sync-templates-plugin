@@ -9,9 +9,12 @@ import com.intellij.psi.PsiDirectory;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.util.IncorrectOperationException;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 import java.util.Properties;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FileHelper {
     protected static final Logger LOG = Logger.getInstance(FileHelper.class);
 

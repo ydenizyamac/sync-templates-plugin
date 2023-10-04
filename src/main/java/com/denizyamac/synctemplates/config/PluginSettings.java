@@ -3,7 +3,8 @@ package com.denizyamac.synctemplates.config;
 import com.denizyamac.synctemplates.constants.PluginConstants;
 import com.denizyamac.synctemplates.extensions.java.lang.String.StringExtension;
 import com.denizyamac.synctemplates.helper.JsonHelper;
-import com.denizyamac.synctemplates.model.PluginConfig;
+import com.denizyamac.synctemplates.model.Directorship;
+import com.denizyamac.synctemplates.model.Template;
 import com.intellij.ide.util.PropertiesComponent;
 import org.bouncycastle.util.Arrays;
 
@@ -33,15 +34,37 @@ public class PluginSettings {
         PropertiesComponent.getInstance().setValue(PluginConstants.PLUGIN_PARENT_MENU_LIST_KEY, menuList);
     }
 
-    public static PluginConfig getConfig() {
+    public static Directorship[] getConfig() {
         var config = PropertiesComponent.getInstance().getValue(PluginConstants.PLUGIN_CONFIG_KEY);
         if (config != null && JsonHelper.isValidJson(config)) return StringExtension.toConfig(config);
         return null;
     }
 
-    public static void setConfig(PluginConfig config) {
+    public static void setConfig(Directorship[] config) {
         var propertiesComponent = PropertiesComponent.getInstance();
-        propertiesComponent.setValue(PluginConstants.PLUGIN_CONFIG_KEY, config.toString());
+        propertiesComponent.setValue(PluginConstants.PLUGIN_CONFIG_KEY, JsonHelper.toString(config));
+    }
+
+    //TODO: optimize config and templates to store
+    public static Template[] getTemplates() {
+        var templates = PropertiesComponent.getInstance().getValue(PluginConstants.PLUGIN_TEMPLATES_KEY);
+        if (templates != null && JsonHelper.isValidJson(templates)) return StringExtension.toTemplateArray(templates);
+        return null;
+    }
+
+    public static void setTemplates(Template[] templates) {
+        var propertiesComponent = PropertiesComponent.getInstance();
+        propertiesComponent.setValue(PluginConstants.PLUGIN_TEMPLATES_KEY, JsonHelper.toString(templates));
+    }
+
+    public static void setTemplateContent(String name, String content) {
+        var propertiesComponent = PropertiesComponent.getInstance();
+        propertiesComponent.setValue(name, content);
+    }
+
+    public static String getTemplateContent(String name) {
+        var propertiesComponent = PropertiesComponent.getInstance();
+        return propertiesComponent.getValue(name);
     }
 
     public static String[] getParentMenus() {
