@@ -7,7 +7,7 @@ configurations.all {
     exclude group: 'org.slf4j', module: 'slf4j-binding'
 }
 group 'com.denizyamac'
-version '0.0.3-SNAPSHOT'
+version '0.0.4-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -40,6 +40,12 @@ patchPluginXml {
         <h2>Version 0.0.3:</h2>
         <ul>
             <li>Treeview search added</li>            
+        </ul>
+    </div>
+    <div>
+        <h2>Version 0.0.4:</h2>
+        <ul>
+            <li>Directorship/Management structure added</li>            
         </ul>
     </div>
 """
