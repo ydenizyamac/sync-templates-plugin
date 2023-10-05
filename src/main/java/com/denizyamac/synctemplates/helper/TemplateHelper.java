@@ -17,13 +17,10 @@ import org.apache.commons.net.util.Base64;
 import javax.swing.*;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,7 +40,7 @@ public class TemplateHelper {
                     String templateExtension = templateItem.getTemplateExtension();
                     String templateStr = PluginSettings.getTemplateContent(templateName);
                     if (templateStr == null) {
-                        templateStr = TemplateHelper.readStringFromUrl(PluginConstants.Helper.getFileUrl(templateItem.getDirectorshipPath(), templateItem.getManagementPath(), templateName, templateExtension));
+                        templateStr = TemplateHelper.doCall(PluginConstants.Helper.getFileUrl(templateItem.getDirectorshipPath(), templateItem.getManagementPath(), templateName, templateExtension));
                     }
 
                     if (templateStr != null) {
@@ -67,9 +64,7 @@ public class TemplateHelper {
                     });
                 }*/
             } else {
-                SwingUtilities.invokeLater(() -> {
-                    Messages.showInfoMessage("Could not get templates", "Warning");
-                });
+                SwingUtilities.invokeLater(() -> Messages.showInfoMessage("Could not get templates", "Warning"));
             }
         }
     }
@@ -93,14 +88,18 @@ public class TemplateHelper {
             for (var management : managements) {
                 //TODO: make it async call
                 templates = TemplateHelper.readFromUrl(PluginConstants.Helper.getTemplatesUrl(directorship.getPath(), management.getPath()), Template[].class);
-                List<Template> _templateList = Arrays.stream(templates).peek(p -> {
-                    p.setDirectorship(directorship.getName());
-                    p.setDirectorshipPath(directorship.getPath());
-                    p.setManagement(management.getName());
-                    p.setManagementPath(management.getPath());
-                    p.setManagementSynonyms(management.getSynonyms());
-                }).collect(Collectors.toList());
-                templateList.addAll(_templateList);
+                if (templates != null) {
+                    List<Template> _templateList = Arrays.stream(templates).peek(p -> {
+                        p.setDirectorship(directorship.getName());
+                        p.setDirectorshipPath(directorship.getPath());
+                        p.setManagement(management.getName());
+                        p.setManagementPath(management.getPath());
+                        p.setManagementSynonyms(management.getSynonyms());
+                    }).collect(Collectors.toList());
+                    templateList.addAll(_templateList);
+                } else {
+                    SwingUtilities.invokeLater(() -> Messages.showErrorDialog("Could not fetch templates from remote", "Error"));
+                }
             }
         }
         templates = templateList.toArray(Template[]::new);
@@ -108,44 +107,54 @@ public class TemplateHelper {
         return templates;
     }
 
+    private static String getBasicAuthenticationHeader(String username, String password) {
+        String valueToEncode = username + ":" + password;
+        return "Basic " + java.util.Base64.getEncoder().encodeToString(valueToEncode.getBytes());
+    }
+
     public static String doCall(String url) {
+        Boolean basicAuth = PluginSettings.getBasicAuthEnabled();
+
         HttpClient httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_2)
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
         try {
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
                     .GET()
-                    .uri(URI.create(url))
-                    .build();
+                    .uri(URI.create(url));
+            if (basicAuth) {
+                builder = builder.header("Authorization", getBasicAuthenticationHeader(PluginSettings.getUsername(), PluginSettings.getPassword()));
+            }
+            HttpRequest request = builder.build();
+
             HttpResponse<String> response = httpClient.send(request,
                     HttpResponse.BodyHandlers.ofString());
             return response.body();
         } catch (IOException | InterruptedException e) {
-            SwingUtilities.invokeLater(() -> {
-                Messages.showErrorDialog("ERROR", e.getMessage());
-            });
+            SwingUtilities.invokeLater(() -> Messages.showErrorDialog(url + " ERROR:", e.getMessage()));
             e.printStackTrace();
             return null;
         }
 
     }
 
-    public static String readStringFromUrl(String url) {
-        try {
-            URL u = new URL(url);
-            try (InputStream in = u.openStream()) {
-                return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            } catch (IOException ioException) {
-                ioException.printStackTrace();
+    /*
+        public static String readStringFromUrl(String url) {
+            try {
+                URL u = new URL(url);
+                try (InputStream in = u.openStream()) {
+                    return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+                } catch (IOException ioException) {
+                    ioException.printStackTrace();
+                    return null;
+                }
+            } catch (MalformedURLException ex) {
+                ex.printStackTrace();
                 return null;
             }
-        } catch (MalformedURLException ex) {
-            ex.printStackTrace();
-            return null;
         }
-    }
-
+    */
     public static <T> T readFromUrl(String url, Class<T> type) {
         String str = doCall(url);
         if (str != null) {

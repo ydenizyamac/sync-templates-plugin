@@ -9,8 +9,27 @@ import com.intellij.ide.util.PropertiesComponent;
 import org.bouncycastle.util.Arrays;
 
 public class PluginSettings {
+    public static Boolean getBasicAuthEnabled() {
+        return Boolean.parseBoolean(PropertiesComponent.getInstance().getValue(PluginConstants.BASIC_AUTH_ENABLED_KEY));
+    }
 
+    public static String getUsername() {
+        return PropertiesComponent.getInstance().getValue(PluginConstants.USERNAME_KEY);
+    }
 
+    public static String getPassword() {
+        return PropertiesComponent.getInstance().getValue(PluginConstants.PASSWORD_KEY);
+    }
+    // Set the value of a property
+    public static void setBasicAuthEnabled(Boolean value) {
+        PropertiesComponent.getInstance().setValue(PluginConstants.BASIC_AUTH_ENABLED_KEY, String.valueOf(value));
+    }  // Set the value of a property
+    public static void setUsername(String value) {
+        PropertiesComponent.getInstance().setValue(PluginConstants.USERNAME_KEY, value);
+    }  // Set the value of a property
+    public static void setPassword(String value) {
+        PropertiesComponent.getInstance().setValue(PluginConstants.PASSWORD_KEY, value);
+    }
     // Get the value of a property
     public static String getRepositoryUrl() {
         return PropertiesComponent.getInstance().getValue(PluginConstants.REPOSITORY_URL_KEY);

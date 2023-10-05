@@ -3,7 +3,7 @@ package com.denizyamac.synctemplates.constants;
 import com.denizyamac.synctemplates.config.PluginSettings;
 
 public class PluginConstants {
-    public static final String BLOB_URL = "https://raw.githubusercontent.com/ydenizyamac/idea-templates/main/";
+    public static final String BLOB_URL = "https://sdlc.yapikredi.com.tr/bitbucket/users/u075753/repos/ykt-code-templates/raw/";
     public static final String CONFIG_FILE_NAME = "config.json";
     public static final String PLUGIN_ACTION_GROUP = "TemplateGeneratorActionGroup";
     public static final String PLUGIN_UPDATE_TEMPLATES_ACTION = "UpdateTemplatesAction";
@@ -18,6 +18,9 @@ public class PluginConstants {
     public static final String REPOSITORY_URL_KEY = "com.denizyamac.synctemplates.repositoryUrl";
     public static final String CONFIG_FILE_NAME_KEY = "com.denizyamac.synctemplates.configFileName";
     public static final String PLUGIN_PARENT_MENU_LIST_KEY = "com.denizyamac.synctemplates.pluginParentMenuList";
+    public static final String BASIC_AUTH_ENABLED_KEY = "com.denizyamac.synctemplates.basicAuthEnabled";
+    public static final String USERNAME_KEY = "com.denizyamac.synctemplates.username";
+    public static final String PASSWORD_KEY = "com.denizyamac.synctemplates.password";
 
     public static class Helper {
         public static String getConfigUrl() {
