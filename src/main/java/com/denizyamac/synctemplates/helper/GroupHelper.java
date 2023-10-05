@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class GroupHelper {
@@ -94,26 +95,19 @@ public class GroupHelper {
     }
 
     public static void clean() {
-        var parents = PluginSettings.getConfig();
-
-        if (parents != null) {
-            var actionManager = ActionManager.getInstance();
-            for (var parent : parents) {
-                var parentId = PluginConstants.Helper.getActionId(parent.getPath().replace(" ", "").replace("/", ""));
-                var menu = (DefaultActionGroup) actionManager.getAction(parentId);
-                if (menu != null) {
-                    Arrays.stream(menu.getChildren(null)).forEach(p -> {
-                        var id = actionManager.getId(p);
-                        if (id == null) {
-                            menu.remove(p);
-                            //p = null;
-                        } else if (id.startsWith(PluginConstants.actionIdPrefix)) {
-                            menu.remove(p);
-                            actionManager.unregisterAction(id);
-                        }
-                    });
-                }
+        var actionManager = ActionManager.getInstance();
+        var mainMenu = (DefaultActionGroup) actionManager.getAction(IdeActions.GROUP_MAIN_MENU);
+        var pluginMenu = Arrays.stream(mainMenu.getChildActionsOrStubs()).filter(p -> actionManager.getId(p).equals(PluginConstants.PLUGIN_ACTION_GROUP)).findFirst();
+        if (pluginMenu.isPresent()) {
+            var directorshipActions = Arrays.stream(((DefaultActionGroup) pluginMenu.get()).getChildActionsOrStubs()).filter(p -> actionManager.getId(p).startsWith(PluginConstants.actionIdPrefix)).collect(Collectors.toList());
+            for (var parent : directorshipActions) {
+                ((DefaultActionGroup) pluginMenu.get()).remove(parent);
             }
+        }
+
+        List<String> customActionIds = actionManager.getActionIdList(PluginConstants.actionIdPrefix);
+        for (var customActionId : customActionIds) {
+            actionManager.unregisterAction(customActionId);
         }
     }
 
@@ -242,12 +236,12 @@ public class GroupHelper {
             projectViewPopupMenuGroup.add(searchAction, new Constraints(Anchor.AFTER, "WeighingNewGroup"));
             mainGroup.add(searchAction);
 
-            /*
+
             DataContext dataContext = DataContext.EMPTY_CONTEXT;
             AnActionEvent e = AnActionEvent.createFromDataContext("dummy", null, dataContext);
             mainMenu.update(e);
             mainGroup.update(e);
-             */
+
         }
 
     }
