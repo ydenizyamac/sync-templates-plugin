@@ -7,15 +7,15 @@ configurations.all {
     exclude group: 'org.slf4j', module: 'slf4j-binding'
 }
 group 'com.denizyamac'
-version '0.0.5-SNAPSHOT'
+version '0.0.6-SNAPSHOT'
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.2'
 }
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
@@ -52,6 +52,12 @@ patchPluginXml {
         <h2>Version 0.0.5:</h2>
         <ul>
             <li>Basic auth support added</li>            
+        </ul>
+    </div>
+    <div>
+        <h2>Version 0.0.6:</h2>
+        <ul>
+            <li>FIX: Plugin was not overriding templates with same name/same group even they are in different directorship/management</li>            
         </ul>
     </div>
 """

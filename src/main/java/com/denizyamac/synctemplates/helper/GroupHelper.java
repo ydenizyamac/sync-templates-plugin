@@ -17,6 +17,7 @@ import com.intellij.psi.PsiDirectory;
 import com.intellij.ui.treeStructure.Tree;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -47,14 +48,14 @@ public class GroupHelper {
             String[] orderedGroups = getSplittedGroups(template.getGroup());
             //Direktörlükler
             if (groups.stream().noneMatch(p -> p.getPath().equals(template.getDirectorshipPath()))) {
-                var actionOrGroup = ActionOrGroup.create(template.getDirectorship(), template.getDirectorship(), ActionOrGroupTypeEnum.GROUP, new ArrayList<>(), template.getDirectorshipPath(), null, true);
+                var actionOrGroup = ActionOrGroup.create(template.getDirectorship(), template.getDirectorship(), ActionOrGroupTypeEnum.GROUP, new ArrayList<>(), template.getDirectorshipPath(), null, true, template.getTemplateUniqueName());
                 groups.add(actionOrGroup);
             }
             var directorship = groups.stream().filter(p -> p.getPath().equals(template.getDirectorshipPath())).findFirst().get();
             var directorshipChildren = directorship.getChildren();
             //Müdürlükler
             if (directorshipChildren.stream().noneMatch(p -> p.getPath().equals(template.getManagementPath()))) {
-                var actionOrGroup = ActionOrGroup.create(template.getManagement(), template.getManagement(), ActionOrGroupTypeEnum.GROUP, new ArrayList<>(), template.getManagementPath(), template.getManagementSynonyms(), false);
+                var actionOrGroup = ActionOrGroup.create(template.getManagement(), template.getManagement(), ActionOrGroupTypeEnum.GROUP, new ArrayList<>(), template.getManagementPath(), template.getManagementSynonyms(), false, template.getTemplateUniqueName());
                 directorshipChildren.add(actionOrGroup);
             }
             for (int i = 0; i < orderedGroups.length; i++) {
@@ -79,7 +80,7 @@ public class GroupHelper {
                         tName = template.getTemplateName();
                         synonyms = template.getSynonyms();
                     }
-                    var actionOrGroup = ActionOrGroup.create(name, tName, type, new ArrayList<>(), path, synonyms, false);
+                    var actionOrGroup = ActionOrGroup.create(name, tName, type, new ArrayList<>(), path, synonyms, false, template.getTemplateUniqueName());
                     parent.getChildren().add(actionOrGroup);
                 }
             }
@@ -125,14 +126,14 @@ public class GroupHelper {
         for (var child : children) {
             if (child.getType() == ActionOrGroupTypeEnum.GROUP) {
                 DefaultActionGroup childGrp = (DefaultActionGroup) generateGroup(child);
-                if (Arrays.stream(grp.getChildActionsOrStubs()).noneMatch(p -> actionManager.getId(p).equals(child.getId()))) {
+                if (Arrays.stream(grp.getChildActionsOrStubs()).noneMatch(p -> actionManager.getId(p).equals(child.getUniqueName()))) {
                     grp.add(childGrp);
                 }
                 List<ActionOrGroup> _children = child.getChildren();
                 walkAmongChildren(_children, childGrp);
             } else {
                 AnAction action = (AnAction) generateGroup(child);
-                if (Arrays.stream(grp.getChildActionsOrStubs()).noneMatch(p -> actionManager.getId(p).equals(child.getId()))) {
+                if (Arrays.stream(grp.getChildActionsOrStubs()).noneMatch(p -> actionManager.getId(p).equals(child.getUniqueName()))) {
                     grp.add(action);
                 }
             }
@@ -152,18 +153,14 @@ public class GroupHelper {
         GroupHelper.clean();
         var groupStructure = generateGroupStructure(templates);
         var actionManager = ActionManager.getInstance();
-        List<ActionOrGroup> roots = new ArrayList<ActionOrGroup>();
-        for (var i = 0; i < groupStructure.size(); i++) {
-            var item = groupStructure.get(i);
+        List<ActionOrGroup> roots = new ArrayList<>();
+        for (ActionOrGroup item : groupStructure) {
             if (item.getRoot()) {
                 roots.add(item);
             }
-            //if (item.getType() == ActionOrGroupTypeEnum.GROUP) {
             DefaultActionGroup grp = (DefaultActionGroup) generateGroup(item);
             var children = item.getChildren();
             walkAmongChildren(children, grp);
-
-            //}
         }
         if (roots.size() > 0) {
             for (var root : roots) {
@@ -180,7 +177,7 @@ public class GroupHelper {
     public static Tree generateTree(Template[] templates) {
         var groupStructure = generateGroupStructure(templates);
         var actionManager = ActionManager.getInstance();
-        List<ActionOrGroup> roots = new ArrayList<ActionOrGroup>();
+        List<ActionOrGroup> roots = new ArrayList<>();
         TemplateTreeModel treeModel = new TemplateTreeModel();
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("Templates");
 
@@ -209,7 +206,9 @@ public class GroupHelper {
 
     public static Icon getIconFromResource(String name) {
         var iconPath = GroupHelper.class.getResource(PluginConstants.ICON_FOLDER + name);
-        return new ImageIcon(iconPath);
+        if (iconPath != null)
+            return new ImageIcon(iconPath);
+        return null;
     }
 
     public static void createMainMenu() {
@@ -268,9 +267,9 @@ public class GroupHelper {
                 var icon = getIconFromResource("fileIcon.png");
                 action = new DynamicCreateFileTemplateAction(item.getName(), icon) {
                     @Override
-                    protected void buildDialog(Project project, PsiDirectory directory, CreateFileFromTemplateDialog.Builder builder) {
+                    protected void buildDialog(@NotNull Project project, @NotNull PsiDirectory directory, CreateFileFromTemplateDialog.@NotNull Builder builder) {
                         var kind = "Class";
-                        builder.setTitle(item.getName()).addKind(kind, icon, item.getTemplateName());
+                        builder.setTitle(item.getName()).addKind(kind, icon, item.getUniqueName());
                     }
                 };
                 addSynonyms(action, item.getSynonyms());

@@ -1,5 +1,6 @@
 package com.denizyamac.synctemplates.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -17,4 +18,9 @@ public class Template {
     private String management;
     private String managementPath;
     private String[] managementSynonyms;
+
+    @JsonIgnore
+    public String getTemplateUniqueName() {
+        return directorshipPath + managementPath + group.replace("/", "").replace(" ","");
+    }
 }

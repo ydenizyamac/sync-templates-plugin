@@ -22,14 +22,10 @@ public class UpdateTemplatesAction extends AnAction {
         if (directorships != null) {
             Template[] templates = TemplateHelper.getAllTemplates(directorships);
             if (templates != null) {
-                TemplateHelper.addAllTemplatesAndGroups(directorships);
-                SwingUtilities.invokeLater(() -> {
-                    Messages.showInfoMessage("Templates Updated", "Info");
-                });
+                TemplateHelper.addAllTemplatesAndGroups(directorships, true);
+                SwingUtilities.invokeLater(() -> Messages.showInfoMessage("Templates Updated", "Info"));
             }
-        } else SwingUtilities.invokeLater(() -> {
-            Messages.showErrorDialog("Please Check Config File", "Config Error");
-        });
+        } else SwingUtilities.invokeLater(() -> Messages.showErrorDialog("Please Check Config File", "Config Error"));
     }
 
 }

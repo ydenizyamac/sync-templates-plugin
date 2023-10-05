@@ -22,14 +22,14 @@ public class ActionOrGroup {
     private Boolean root;
     private String management;
     private String[] managementSynonyms;
+    private String uniqueName;
 
-
-    public static ActionOrGroup create(String name, String templateName, ActionOrGroupTypeEnum type, List<ActionOrGroup> children, String path, String[] synonyms, Boolean root) {
-        return new ActionOrGroup(name, templateName, type, children, path, synonyms, root);
+    public static ActionOrGroup create(String name, String templateName, ActionOrGroupTypeEnum type, List<ActionOrGroup> children, String path, String[] synonyms, Boolean root, String uniqueName) {
+        return new ActionOrGroup(name, templateName, type, children, path, synonyms, root, uniqueName);
     }
 
 
-    public ActionOrGroup(String name, String templateName, ActionOrGroupTypeEnum type, List<ActionOrGroup> children, String path, String[] synonyms, Boolean root) {
+    public ActionOrGroup(String name, String templateName, ActionOrGroupTypeEnum type, List<ActionOrGroup> children, String path, String[] synonyms, Boolean root,String uniqueName) {
         this.name = name;
         this.templateName = templateName;
         this.type = type;
@@ -37,10 +37,11 @@ public class ActionOrGroup {
         this.path = path;
         this.synonyms = synonyms;
         this.root = root;
+        this.uniqueName = uniqueName;
     }
 
     public String getId() {
-        return PluginConstants.Helper.getActionId(path.replace(" ", "").replace("/", ""));
+        return PluginConstants.Helper.getActionId(uniqueName+"_"+name);
     }
 
 }

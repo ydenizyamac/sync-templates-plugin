@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TemplateHelper {
-    public static void addAllTemplatesAndGroups(Directorship[] directorships) {
+    public static void addAllTemplatesAndGroups(Directorship[] directorships,boolean forceUpdate) {
         if (directorships != null) {
             var templates = PluginSettings.getTemplates();
             if (templates != null) {
@@ -37,9 +37,10 @@ public class TemplateHelper {
                 FileTemplate[] fileTemplates = fileTemplateManager.getInternalTemplates();
                 for (var templateItem : templates) {
                     String templateName = templateItem.getTemplateName();
+
                     String templateExtension = templateItem.getTemplateExtension();
                     String templateStr = PluginSettings.getTemplateContent(templateName);
-                    if (templateStr == null) {
+                    if (templateStr == null || forceUpdate) {
                         templateStr = TemplateHelper.doCall(PluginConstants.Helper.getFileUrl(templateItem.getDirectorshipPath(), templateItem.getManagementPath(), templateName, templateExtension));
                     }
 
@@ -47,7 +48,7 @@ public class TemplateHelper {
                         PluginSettings.setTemplateContent(templateName, templateStr);
                         if (Arrays.stream(fileTemplates).noneMatch(p -> p.getName().equals(templateName))) {
                             if (!templateStr.isBlank() && !templateStr.isEmpty()) {
-                                var template = FileTemplateUtil.createTemplate(templateName, templateExtension, templateStr, fileTemplates);
+                                var template = FileTemplateUtil.createTemplate(templateItem.getTemplateUniqueName(), templateExtension, templateStr, fileTemplates);
                                 fileTemplates = ArrayUtil.append(fileTemplates, template);
                             }
                         }

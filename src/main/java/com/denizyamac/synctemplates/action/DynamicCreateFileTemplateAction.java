@@ -23,8 +23,8 @@ public class DynamicCreateFileTemplateAction extends CreateFileFromTemplateActio
     }
 
     @Override
-    protected void buildDialog(Project project, PsiDirectory directory,
-                               CreateFileFromTemplateDialog.Builder builder) {
+    protected void buildDialog(@NotNull Project project, @NotNull PsiDirectory directory,
+                               @NotNull CreateFileFromTemplateDialog.Builder builder) {
 
     }
 
@@ -44,13 +44,16 @@ public class DynamicCreateFileTemplateAction extends CreateFileFromTemplateActio
         var project = dir.getProject();
         var defaultProperties = FileTemplateManager.getInstance(project).getDefaultProperties();
         var properties = new Properties(defaultProperties);
-        PsiElement element = null;
+        PsiElement element;
         try {
-            element = new CreateFromTemplateDialog(
+            var dialog = new CreateFromTemplateDialog(
                     project, dir, template,
                     new AttributesDefaults(name).withFixedName(true),
                     properties
-            ).create();
+            );
+            dialog.setTitle(name + " Variables");
+            element = dialog
+                    .create();
         } catch (IncorrectOperationException e) {
             throw e;
         } catch (Exception e) {
