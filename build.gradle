@@ -48,6 +48,12 @@ patchPluginXml {
             <li>Directorship/Management structure added</li>            
         </ul>
     </div>
+    <div>
+        <h2>Version 0.0.5:</h2>
+        <ul>
+            <li>Basic auth support added</li>            
+        </ul>
+    </div>
 """
 }
 test {
