@@ -23,6 +23,9 @@ public class UpdateTemplatesAction extends AnAction {
             Template[] templates = TemplateHelper.getAllTemplates(directorships);
             if (templates != null) {
                 TemplateHelper.addAllTemplatesAndGroups(directorships);
+                SwingUtilities.invokeLater(() -> {
+                    Messages.showInfoMessage("Templates Updated", "Info");
+                });
             }
         } else SwingUtilities.invokeLater(() -> {
             Messages.showErrorDialog("Please Check Config File", "Config Error");
