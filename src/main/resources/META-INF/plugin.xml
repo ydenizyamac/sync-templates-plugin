@@ -18,5 +18,8 @@
 
     <actions>
         <!-- Add your actions here -->
+        <group id="TemplateGeneratorActionGroup" text="YBK Booster">
+            <add-to-group group-id="MainMenu"/>
+        </group>
     </actions>
 </idea-plugin>

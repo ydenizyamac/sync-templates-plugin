@@ -19,6 +19,7 @@ public class PluginConstants {
     public static final String CONFIG_FILE_NAME_KEY = "com.denizyamac.synctemplates.configFileName";
     public static final String PLUGIN_PARENT_MENU_LIST_KEY = "com.denizyamac.synctemplates.pluginParentMenuList";
     public static final String BASIC_AUTH_ENABLED_KEY = "com.denizyamac.synctemplates.basicAuthEnabled";
+    public static final String DEBUG_POPUP_ENABLED_KEY = "com.denizyamac.synctemplates.debugPopupEnabled";
     public static final String USERNAME_KEY = "com.denizyamac.synctemplates.username";
     public static final String PASSWORD_KEY = "com.denizyamac.synctemplates.password";
 

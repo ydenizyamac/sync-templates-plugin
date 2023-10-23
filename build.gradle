@@ -1,13 +1,12 @@
 plugins {
-    id 'org.jetbrains.intellij' version '1.15.0'
+    id 'org.jetbrains.intellij' version '1.16.0'
     id 'java'
-    id 'io.freefair.lombok' version "8.1.0"
 }
 configurations.all {
     exclude group: 'org.slf4j', module: 'slf4j-binding'
 }
 group 'com.denizyamac'
-version '0.0.6-SNAPSHOT'
+version '0.0.7-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -16,6 +15,11 @@ repositories {
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.2'
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    testCompileOnly 'org.projectlombok:lombok:1.18.30'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
 }
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
@@ -58,6 +62,13 @@ patchPluginXml {
         <h2>Version 0.0.6:</h2>
         <ul>
             <li>**FIX**: The plugin overrides templates with the same name or group, even if they are in different directories or managed by different teams.</li>            
+        </ul>
+    </div>
+     <div>
+        <h2>Version 0.0.7:</h2>
+        <ul>
+            <li>**FIX**: Nested groups with same name.</li>
+            <li>**ADD**: Disabling/hiding actions and groups when click directory that are not package or file.</li>            
         </ul>
     </div>
 """

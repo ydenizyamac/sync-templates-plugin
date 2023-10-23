@@ -105,7 +105,12 @@ public class PluginSettings {
         }
         setParentMenus(list);
     }
-
+    public static void setDebugPopupEnabled(Boolean value) {
+        PropertiesComponent.getInstance().setValue(PluginConstants.DEBUG_POPUP_ENABLED_KEY, String.valueOf(value));
+    }
+    public static Boolean getDebugPopupEnabled() {
+        return Boolean.parseBoolean(PropertiesComponent.getInstance().getValue(PluginConstants.DEBUG_POPUP_ENABLED_KEY));
+    }
     public static void addIcon(String name, String b64) {
         PropertiesComponent.getInstance().setValue(name, b64);
     }

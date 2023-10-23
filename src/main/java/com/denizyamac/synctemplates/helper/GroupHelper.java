@@ -13,6 +13,9 @@ import com.denizyamac.synctemplates.ui.TemplateTreeModel;
 import com.intellij.ide.actions.CreateFileFromTemplateDialog;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.roots.ProjectFileIndex;
+import com.intellij.openapi.util.text.StringUtil;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiDirectory;
 import com.intellij.ui.treeStructure.Tree;
 import lombok.AccessLevel;
@@ -25,7 +28,7 @@ import javax.swing.tree.TreeSelectionModel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -48,14 +51,14 @@ public class GroupHelper {
             String[] orderedGroups = getSplittedGroups(template.getGroup());
             //Direktörlükler
             if (groups.stream().noneMatch(p -> p.getPath().equals(template.getDirectorshipPath()))) {
-                var actionOrGroup = ActionOrGroup.create(template.getDirectorship(), template.getDirectorship(), ActionOrGroupTypeEnum.GROUP, new ArrayList<>(), template.getDirectorshipPath(), null, true, template.getTemplateUniqueName());
+                var actionOrGroup = ActionOrGroup.create(template.getDirectorship(), template.getDirectorship(), ActionOrGroupTypeEnum.GROUP, new ArrayList<>(), template.getDirectorshipPath(), null, true, "directorship");
                 groups.add(actionOrGroup);
             }
             var directorship = groups.stream().filter(p -> p.getPath().equals(template.getDirectorshipPath())).findFirst().get();
             var directorshipChildren = directorship.getChildren();
             //Müdürlükler
             if (directorshipChildren.stream().noneMatch(p -> p.getPath().equals(template.getManagementPath()))) {
-                var actionOrGroup = ActionOrGroup.create(template.getManagement(), template.getManagement(), ActionOrGroupTypeEnum.GROUP, new ArrayList<>(), template.getManagementPath(), template.getManagementSynonyms(), false, template.getTemplateUniqueName());
+                var actionOrGroup = ActionOrGroup.create(template.getManagement(), template.getManagement(), ActionOrGroupTypeEnum.GROUP, new ArrayList<>(), template.getManagementPath(), template.getManagementSynonyms(), false, "management");
                 directorshipChildren.add(actionOrGroup);
             }
             for (int i = 0; i < orderedGroups.length; i++) {
@@ -71,16 +74,18 @@ public class GroupHelper {
                     parent = parent.getChildren().stream().filter(p -> p.getPath().equals(_path)).findFirst().get();
                     layer++;
                 }
-                if (parent.getChildren().stream().noneMatch(p -> path.equals(p.getPath() + "/" + name.replace(" ", "")))) {
+                if (parent.getChildren().stream().noneMatch(p -> path.equals(p.getPath()))) {
                     String tName = name;
+                    String uniqueName = template.getDirectorship() + "_" + template.getManagement() + "_" + path;
                     String[] synonyms = null;
                     if (type == ActionOrGroupTypeEnum.ACTION) {
                         management.setManagement(template.getManagement());
                         management.setManagementSynonyms(template.getManagementSynonyms());
                         tName = template.getTemplateName();
                         synonyms = template.getSynonyms();
+                        uniqueName = template.getTemplateUniqueName();
                     }
-                    var actionOrGroup = ActionOrGroup.create(name, tName, type, new ArrayList<>(), path, synonyms, false, template.getTemplateUniqueName());
+                    var actionOrGroup = ActionOrGroup.create(name, tName, type, new ArrayList<>(), path, synonyms, false, uniqueName);
                     parent.getChildren().add(actionOrGroup);
                 }
             }
@@ -124,18 +129,11 @@ public class GroupHelper {
     private static void walkAmongChildren(List<ActionOrGroup> children, DefaultActionGroup grp) {
         var actionManager = ActionManager.getInstance();
         for (var child : children) {
+            AnAction actionOrGroup = (AnAction) generateGroup(child);
+            grp.add(actionOrGroup);
             if (child.getType() == ActionOrGroupTypeEnum.GROUP) {
-                DefaultActionGroup childGrp = (DefaultActionGroup) generateGroup(child);
-                if (Arrays.stream(grp.getChildActionsOrStubs()).noneMatch(p -> actionManager.getId(p).equals(child.getUniqueName()))) {
-                    grp.add(childGrp);
-                }
                 List<ActionOrGroup> _children = child.getChildren();
-                walkAmongChildren(_children, childGrp);
-            } else {
-                AnAction action = (AnAction) generateGroup(child);
-                if (Arrays.stream(grp.getChildActionsOrStubs()).noneMatch(p -> actionManager.getId(p).equals(child.getUniqueName()))) {
-                    grp.add(action);
-                }
+                walkAmongChildren(_children, (DefaultActionGroup) actionOrGroup);
             }
         }
     }
@@ -143,9 +141,12 @@ public class GroupHelper {
     private static void walkAmongChildren_tree(List<ActionOrGroup> children, DefaultMutableTreeNode grp) {
         for (var child : children) {
             DefaultMutableTreeNode childGrp = generateTreeNode(child);
+            AtomicReference<Boolean> exist = new AtomicReference<>(false);
             grp.add(childGrp);
-            List<ActionOrGroup> _children = child.getChildren();
-            walkAmongChildren_tree(_children, childGrp);
+            if (child.getType() == ActionOrGroupTypeEnum.GROUP) {
+                List<ActionOrGroup> _children = child.getChildren();
+                walkAmongChildren_tree(_children, childGrp);
+            }
         }
     }
 
@@ -159,6 +160,7 @@ public class GroupHelper {
                 roots.add(item);
             }
             DefaultActionGroup grp = (DefaultActionGroup) generateGroup(item);
+
             var children = item.getChildren();
             walkAmongChildren(children, grp);
         }
@@ -213,36 +215,19 @@ public class GroupHelper {
 
     public static void createMainMenu() {
         var actionManager = ActionManager.getInstance();
-        var mainMenu = (DefaultActionGroup) actionManager.getAction(ActionPlaces.MAIN_MENU);
-        //IdeActions.GROUP_MAIN_MENU
-        if (Arrays.stream(mainMenu.getChildren(null)).filter(Objects::nonNull).noneMatch(p -> actionManager.getId(p).equals(PluginConstants.PLUGIN_ACTION_GROUP))) {
-            DefaultActionGroup mainGroup = DefaultActionGroup.createPopupGroup(() -> PluginConstants.pluginMainGroupText);
-            actionManager.registerAction(PluginConstants.PLUGIN_ACTION_GROUP, mainGroup);
+        DefaultActionGroup mainGroup = (DefaultActionGroup) actionManager.getAction(PluginConstants.PLUGIN_ACTION_GROUP);
+        var updateIcon = getIconFromResource("update.png");
+        UpdateTemplatesAction updateAction = new UpdateTemplatesAction(PluginConstants.PLUGIN_UPDATE_TEMPLATES_ACTION_TEXT, updateIcon);
+        actionManager.registerAction(PluginConstants.PLUGIN_UPDATE_TEMPLATES_ACTION, updateAction);
+        mainGroup.add(updateAction);
 
-            mainMenu.add(mainGroup);
-            var updateIcon = getIconFromResource("update.png");
-            UpdateTemplatesAction updateAction = new UpdateTemplatesAction(PluginConstants.PLUGIN_UPDATE_TEMPLATES_ACTION_TEXT, updateIcon);
-            actionManager.registerAction(PluginConstants.PLUGIN_UPDATE_TEMPLATES_ACTION, updateAction);
-            mainGroup.add(updateAction);
+        var searchIcon = getIconFromResource("search.png");
+        var projectViewPopupMenuGroupName = "ProjectViewPopupMenu";
+        var projectViewPopupMenuGroup = (DefaultActionGroup) actionManager.getAction(projectViewPopupMenuGroupName);
+        SearchAction searchAction = new SearchAction(PluginConstants.PLUGIN_SEARCH_TEMPLATES_ACTION_TEXT, searchIcon);
+        actionManager.registerAction(PluginConstants.PLUGIN_SEARCH_TEMPLATES_ACTION, searchAction);
 
-            var searchIcon = getIconFromResource("search.png");
-            var projectViewPopupMenuGroupName = "ProjectViewPopupMenu";
-            var projectViewPopupMenuGroup = (DefaultActionGroup) actionManager.getAction(projectViewPopupMenuGroupName);
-
-            SearchAction searchAction = new SearchAction(PluginConstants.PLUGIN_SEARCH_TEMPLATES_ACTION_TEXT, searchIcon);
-            actionManager.registerAction(PluginConstants.PLUGIN_SEARCH_TEMPLATES_ACTION, searchAction);
-
-            projectViewPopupMenuGroup.add(searchAction, new Constraints(Anchor.AFTER, "WeighingNewGroup"));
-            mainGroup.add(searchAction);
-
-
-            DataContext dataContext = DataContext.EMPTY_CONTEXT;
-            AnActionEvent e = AnActionEvent.createFromDataContext("dummy", null, dataContext);
-            mainMenu.update(e);
-            mainGroup.update(e);
-
-        }
-
+        projectViewPopupMenuGroup.add(searchAction, new Constraints(Anchor.AFTER, "WeighingNewGroup"));
     }
 
     private static DefaultMutableTreeNode generateTreeNode(Object item) {
@@ -254,7 +239,14 @@ public class GroupHelper {
         if (item.getType() == ActionOrGroupTypeEnum.GROUP) {
             DefaultActionGroup group = (DefaultActionGroup) actionManager.getAction(item.getId());
             if (group == null) {
-                group = DefaultActionGroup.createPopupGroup(item::getName);
+                group = new DefaultActionGroup(item::getName, true) {
+                    @Override
+                    public void update(@NotNull AnActionEvent e) {
+                        Presentation presentation = e.getPresentation();
+                        // Hide the action if the clicked folder is not a Java package
+                        presentation.setVisible(GroupHelper.isPackage(e));
+                    }
+                };
                 if (item.getManagementSynonyms() != null)
                     addSynonyms(group, item.getManagementSynonyms());
                 actionManager.registerAction(item.getId(), group);
@@ -267,6 +259,12 @@ public class GroupHelper {
                 var icon = getIconFromResource("fileIcon.png");
                 action = new DynamicCreateFileTemplateAction(item.getName(), icon) {
                     @Override
+                    public void update(@NotNull AnActionEvent e) {
+                        Presentation presentation = e.getPresentation();
+                        presentation.setEnabledAndVisible(GroupHelper.isPackage(e));
+                    }
+
+                    @Override
                     protected void buildDialog(@NotNull Project project, @NotNull PsiDirectory directory, CreateFileFromTemplateDialog.@NotNull Builder builder) {
                         var kind = "Class";
                         builder.setTitle(item.getName()).addKind(kind, icon, item.getUniqueName());
@@ -278,5 +276,28 @@ public class GroupHelper {
             }
             return action;
         }
+    }
+
+    public static Boolean isPackage(AnActionEvent e) {
+        try {
+            Project project = e.getProject();
+            Object data = e.getData(LangDataKeys.PSI_ELEMENT);
+            if (data instanceof PsiDirectory) {
+                PsiDirectory directory = (PsiDirectory) e.getData(LangDataKeys.PSI_ELEMENT);
+                if (project == null || directory == null) return false;
+                // Get the VirtualFile object for the selected directory
+                VirtualFile virtualFile = directory.getVirtualFile();
+                String c = ProjectFileIndex.getInstance(project).getPackageNameByDirectory(virtualFile);
+                return StringUtil.isNotEmpty(c);
+            } else {
+                data = e.getData(LangDataKeys.PSI_FILE);
+                if (data != null) {
+                    return true;
+                }
+            }
+
+        } catch (Exception ignored) {
+        }
+        return false;
     }
 }

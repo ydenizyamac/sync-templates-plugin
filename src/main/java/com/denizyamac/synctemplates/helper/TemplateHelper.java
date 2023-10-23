@@ -13,6 +13,7 @@ import com.intellij.util.ArrayUtil;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.commons.net.util.Base64;
+import org.apache.http.HttpStatus;
 
 import javax.swing.*;
 import java.io.IOException;
@@ -29,7 +30,7 @@ import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TemplateHelper {
-    public static void addAllTemplatesAndGroups(Directorship[] directorships,boolean forceUpdate) {
+    public static void addAllTemplatesAndGroups(Directorship[] directorships, boolean forceUpdate) {
         if (directorships != null) {
             var templates = PluginSettings.getTemplates();
             if (templates != null) {
@@ -131,9 +132,14 @@ public class TemplateHelper {
 
             HttpResponse<String> response = httpClient.send(request,
                     HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == HttpStatus.SC_UNAUTHORIZED || response.statusCode() == HttpStatus.SC_FORBIDDEN) {
+                SwingUtilities.invokeLater(() -> Messages.showErrorDialog("Please check configuration, repository needs authentication!", " ERROR:"));
+            }
             return response.body();
         } catch (IOException | InterruptedException e) {
-            SwingUtilities.invokeLater(() -> Messages.showErrorDialog(url + " ERROR:", e.getMessage()));
+            if (PluginSettings.getDebugPopupEnabled()) {
+                SwingUtilities.invokeLater(() -> Messages.showErrorDialog(e.getMessage(), " ERROR: \n Url: " + url + "\n"));
+            }
             e.printStackTrace();
             return null;
         }

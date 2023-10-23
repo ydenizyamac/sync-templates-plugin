@@ -20,6 +20,8 @@ public class PluginConfigurable extends BaseConfigurable {
     private JTextField username_textField;
     private JLabel password_label;
     private JPasswordField password_passwordField;
+    private JLabel debugPopup_enabled_label;
+    private JCheckBox debugPopup_enabled_checkbox;
 
     @Override
     public @NlsContexts.ConfigurableName String getDisplayName() {
@@ -49,6 +51,8 @@ public class PluginConfigurable extends BaseConfigurable {
             username_textField.setEnabled(b.isSelected());
             password_passwordField.setEnabled(b.isSelected());
         });
+        debugPopup_enabled_label = new JLabel("Debug Popup Enabled");
+        debugPopup_enabled_checkbox = new JCheckBox();
         mainPanel.setLayout(new GridBagLayout());
 
         GridBagConstraints constraints = new GridBagConstraints();
@@ -103,6 +107,16 @@ public class PluginConfigurable extends BaseConfigurable {
         constraints.gridx = 1;
         constraints.gridy = 4;
         mainPanel.add(password_passwordField, constraints);
+
+
+        // Add label and text box to second row
+        constraints.gridx = 0;
+        constraints.gridy = 5;
+        mainPanel.add(debugPopup_enabled_label, constraints);
+
+        constraints.gridx = 1;
+        constraints.gridy = 5;
+        mainPanel.add(debugPopup_enabled_checkbox, constraints);
         return mainPanel;
     }
 
@@ -116,7 +130,7 @@ public class PluginConfigurable extends BaseConfigurable {
         PluginSettings.setBasicAuthEnabled(basicAuth_checkbox.isSelected());
         PluginSettings.setUsername(username_textField.getText());
         PluginSettings.setPassword(new String(password_passwordField.getPassword()));
-
+        PluginSettings.setDebugPopupEnabled(debugPopup_enabled_checkbox.isSelected());
     }
 
     @Override
@@ -125,6 +139,7 @@ public class PluginConfigurable extends BaseConfigurable {
         String repoUrl = PluginSettings.getRepositoryUrl();
         String configName = PluginSettings.getConfigFileName();
         Boolean basicAuthEnabled = PluginSettings.getBasicAuthEnabled();
+        Boolean debugPopupEnabled = PluginSettings.getDebugPopupEnabled();
         String username = PluginSettings.getUsername();
         String password = PluginSettings.getPassword();
         repoUrl_textField.setText(repoUrl);
@@ -132,6 +147,7 @@ public class PluginConfigurable extends BaseConfigurable {
         basicAuth_checkbox.setSelected(basicAuthEnabled);
         username_textField.setText(username);
         password_passwordField.setText(password);
+        debugPopup_enabled_checkbox.setSelected(debugPopupEnabled);
     }
 
     @Override
@@ -141,11 +157,14 @@ public class PluginConfigurable extends BaseConfigurable {
         String configName = configName_textField.getText();
         Boolean basicAuthEnabled = basicAuth_checkbox.isSelected();
         Boolean basicAuthEnabled_state = PluginSettings.getBasicAuthEnabled();
+        Boolean debugPopupEnabled = debugPopup_enabled_checkbox.isSelected();
+        Boolean debugPopupEnabled_state = PluginSettings.getDebugPopupEnabled();
+
         String username = username_textField.getText();
         String password = new String(password_passwordField.getPassword());
         return !repoUrl.equals(PluginSettings.getRepositoryUrl()) || !configName.equals(PluginSettings.getConfigFileName()) ||
                 !basicAuthEnabled.equals(basicAuthEnabled_state) || !username.equals(PluginSettings.getUsername()) ||
-                !password.equals(PluginSettings.getPassword());
+                !password.equals(PluginSettings.getPassword()) || !debugPopupEnabled.equals(debugPopupEnabled_state);
     }
 
     @Override
@@ -163,5 +182,7 @@ public class PluginConfigurable extends BaseConfigurable {
         username_textField = null;
         password_label = null;
         password_passwordField = null;
+        debugPopup_enabled_label = null;
+        debugPopup_enabled_checkbox = null;
     }
 }

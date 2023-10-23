@@ -28,6 +28,6 @@ public class ProjectOpenActivity implements StartupActivity.DumbAware {
             if (templates != null) {
                 TemplateHelper.addAllTemplatesAndGroups(directorships, false);
             }
-        } else SwingUtilities.invokeLater(() -> Messages.showErrorDialog("Please Check Config File", "Config Error"));
+        } else SwingUtilities.invokeLater(() -> Messages.showErrorDialog("Please Check Plugin Configuration", "Config Error"));
     }
 }
