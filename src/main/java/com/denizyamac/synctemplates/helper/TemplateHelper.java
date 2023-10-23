@@ -100,7 +100,10 @@ public class TemplateHelper {
                     }).collect(Collectors.toList());
                     templateList.addAll(_templateList);
                 } else {
-                    SwingUtilities.invokeLater(() -> Messages.showErrorDialog("Could not fetch templates from remote", "Error"));
+                    if (PluginSettings.getDebugPopupEnabled()) {
+                        SwingUtilities.invokeLater(() -> Messages.showErrorDialog("Could not fetch templates from remote\n directorship:" + directorship.getName() + "\npath:" + directorship.getPath() + "\nmanagement:" + management.getName() + "\npath:" + management.getPath(), "Error"));
+                    }
+                    return null;
                 }
             }
         }

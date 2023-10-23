@@ -6,7 +6,7 @@ configurations.all {
     exclude group: 'org.slf4j', module: 'slf4j-binding'
 }
 group 'com.denizyamac'
-version '0.0.7-SNAPSHOT'
+version '0.0.8-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -69,6 +69,12 @@ patchPluginXml {
         <ul>
             <li>**FIX**: Nested groups with same name.</li>
             <li>**ADD**: Disabling/hiding actions and groups when click directory that are not package or file.</li>            
+        </ul>
+    </div>
+    <div>
+        <h2>Version 0.0.8:</h2>
+        <ul>
+            <li>**FIX**: Duplicated update button and hiding menu in non-package files.</li>
         </ul>
     </div>
 """

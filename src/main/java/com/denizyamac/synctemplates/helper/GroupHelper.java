@@ -216,18 +216,21 @@ public class GroupHelper {
     public static void createMainMenu() {
         var actionManager = ActionManager.getInstance();
         DefaultActionGroup mainGroup = (DefaultActionGroup) actionManager.getAction(PluginConstants.PLUGIN_ACTION_GROUP);
-        var updateIcon = getIconFromResource("update.png");
-        UpdateTemplatesAction updateAction = new UpdateTemplatesAction(PluginConstants.PLUGIN_UPDATE_TEMPLATES_ACTION_TEXT, updateIcon);
-        actionManager.registerAction(PluginConstants.PLUGIN_UPDATE_TEMPLATES_ACTION, updateAction);
-        mainGroup.add(updateAction);
+        if (actionManager.getAction(PluginConstants.PLUGIN_UPDATE_TEMPLATES_ACTION) == null) {
+            var updateIcon = getIconFromResource("update.png");
+            UpdateTemplatesAction updateAction = new UpdateTemplatesAction(PluginConstants.PLUGIN_UPDATE_TEMPLATES_ACTION_TEXT, updateIcon);
+            actionManager.registerAction(PluginConstants.PLUGIN_UPDATE_TEMPLATES_ACTION, updateAction);
+            mainGroup.add(updateAction);
+        }
+        if (actionManager.getAction(PluginConstants.PLUGIN_SEARCH_TEMPLATES_ACTION) == null) {
+            var searchIcon = getIconFromResource("search.png");
+            var projectViewPopupMenuGroupName = "ProjectViewPopupMenu";
+            var projectViewPopupMenuGroup = (DefaultActionGroup) actionManager.getAction(projectViewPopupMenuGroupName);
+            SearchAction searchAction = new SearchAction(PluginConstants.PLUGIN_SEARCH_TEMPLATES_ACTION_TEXT, searchIcon);
+            actionManager.registerAction(PluginConstants.PLUGIN_SEARCH_TEMPLATES_ACTION, searchAction);
 
-        var searchIcon = getIconFromResource("search.png");
-        var projectViewPopupMenuGroupName = "ProjectViewPopupMenu";
-        var projectViewPopupMenuGroup = (DefaultActionGroup) actionManager.getAction(projectViewPopupMenuGroupName);
-        SearchAction searchAction = new SearchAction(PluginConstants.PLUGIN_SEARCH_TEMPLATES_ACTION_TEXT, searchIcon);
-        actionManager.registerAction(PluginConstants.PLUGIN_SEARCH_TEMPLATES_ACTION, searchAction);
-
-        projectViewPopupMenuGroup.add(searchAction, new Constraints(Anchor.AFTER, "WeighingNewGroup"));
+            projectViewPopupMenuGroup.add(searchAction, new Constraints(Anchor.AFTER, "WeighingNewGroup"));
+        }
     }
 
     private static DefaultMutableTreeNode generateTreeNode(Object item) {
@@ -290,9 +293,10 @@ public class GroupHelper {
                 String c = ProjectFileIndex.getInstance(project).getPackageNameByDirectory(virtualFile);
                 return StringUtil.isNotEmpty(c);
             } else {
-                data = e.getData(LangDataKeys.PSI_FILE);
+                data = e.getData(LangDataKeys.VIRTUAL_FILE);
                 if (data != null) {
-                    return true;
+                    String c = ProjectFileIndex.getInstance(project).getPackageNameByDirectory(((VirtualFile) data).getParent());
+                    return StringUtil.isNotEmpty(c);
                 }
             }
 
