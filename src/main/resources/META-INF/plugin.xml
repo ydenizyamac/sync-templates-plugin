@@ -18,7 +18,7 @@
 
     <actions>
         <!-- Add your actions here -->
-        <group id="TemplateGeneratorActionGroup" text="YBK Booster">
+        <group id="TemplateGeneratorActionGroup" text="YKT Booster">
             <add-to-group group-id="MainMenu"/>
         </group>
     </actions>
