@@ -8,14 +8,13 @@ import com.denizyamac.synctemplates.model.Template;
 import com.intellij.ide.fileTemplates.FileTemplate;
 import com.intellij.ide.fileTemplates.FileTemplateManager;
 import com.intellij.ide.fileTemplates.FileTemplateUtil;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.util.ArrayUtil;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.apache.commons.net.util.Base64;
 import org.apache.http.HttpStatus;
 
-import javax.swing.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -30,7 +29,32 @@ import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TemplateHelper {
-    public static void addAllTemplatesAndGroups(Directorship[] directorships, boolean forceUpdate) {
+    public static void getTemplates(boolean force) {
+        var directorships = TemplateHelper.getDirectorships(force);
+        if (directorships != null) {
+            if (Boolean.TRUE.equals(force)) {
+                Template[] templates = TemplateHelper.getAllTemplates(directorships);
+                if (templates != null) {
+                    TemplateHelper.addAllTemplates(directorships, true);
+                    GroupHelper.generateGroups(templates);
+                    ApplicationManager.getApplication().invokeLater(() -> Messages.showInfoMessage("Templates updated", "Info"));
+                }
+            } else {
+                Template[] templates = PluginSettings.getTemplates();
+                if (templates == null) {
+                    templates = TemplateHelper.getAllTemplates(directorships);
+
+                }
+                if (templates != null) {
+                    TemplateHelper.addAllTemplates(directorships, false);
+                    //ApplicationManager.getApplication().invokeLater(() -> Messages.showInfoMessage("Templates Updated", "Info"));
+                }
+            }
+        } else
+            ApplicationManager.getApplication().invokeLater(() -> Messages.showErrorDialog("Please check plugin configuration", "Config Error"));
+    }
+
+    private static void addAllTemplates(Directorship[] directorships, boolean forceUpdate) {
         if (directorships != null) {
             var templates = PluginSettings.getTemplates();
             if (templates != null) {
@@ -57,16 +81,8 @@ public class TemplateHelper {
                 }
                 fileTemplateManager.setTemplates(FileTemplateManager.INTERNAL_TEMPLATES_CATEGORY, Arrays.asList(fileTemplates));
                 fileTemplateManager.saveAllTemplates();
-                GroupHelper.generateGroups(templates);
-                /*if (SwingUtilities.isEventDispatchThread()) {
-                    Messages.showInfoMessage("TemplatesUpdated", "Info");
-                } else {
-                    SwingUtilities.invokeLater(() -> {
-                        Messages.showInfoMessage("TemplatesUpdated", "Info");
-                    });
-                }*/
             } else {
-                SwingUtilities.invokeLater(() -> Messages.showInfoMessage("Could not get templates", "Warning"));
+                ApplicationManager.getApplication().invokeLater(() -> Messages.showInfoMessage("Could not get templates", "Warning"));
             }
         }
     }
@@ -75,7 +91,9 @@ public class TemplateHelper {
         var directorships = PluginSettings.getConfig();
         if (directorships == null || Boolean.TRUE.equals(forceUpdate)) {
             directorships = TemplateHelper.readFromUrl(PluginConstants.Helper.getConfigUrl(), Directorship[].class);
-            PluginSettings.setConfig(directorships);
+            if (directorships != null) {
+                PluginSettings.setConfig(directorships);
+            }
             return directorships;
         }
         return directorships;
@@ -101,14 +119,17 @@ public class TemplateHelper {
                     templateList.addAll(_templateList);
                 } else {
                     if (PluginSettings.getDebugPopupEnabled()) {
-                        SwingUtilities.invokeLater(() -> Messages.showErrorDialog("Could not fetch templates from remote\n directorship:" + directorship.getName() + "\npath:" + directorship.getPath() + "\nmanagement:" + management.getName() + "\npath:" + management.getPath(), "Error"));
+                        ApplicationManager.getApplication().invokeLater(() -> Messages.showErrorDialog("Could not fetch templates from remote\n directorship:" + directorship.getName() + "\npath:" + directorship.getPath() + "\nmanagement:" + management.getName() + "\npath:" + management.getPath(), "Error"));
                     }
                     return null;
                 }
             }
         }
         templates = templateList.toArray(Template[]::new);
-        PluginSettings.setTemplates(templates);
+        if (templates != null) {
+            PluginSettings.setTemplates(templates);
+        }
+        GroupHelper.generateGroups(templates);
         return templates;
     }
 
@@ -136,12 +157,12 @@ public class TemplateHelper {
             HttpResponse<String> response = httpClient.send(request,
                     HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == HttpStatus.SC_UNAUTHORIZED || response.statusCode() == HttpStatus.SC_FORBIDDEN) {
-                SwingUtilities.invokeLater(() -> Messages.showErrorDialog("Please check configuration, repository needs authentication!", " ERROR:"));
+                ApplicationManager.getApplication().invokeLater(() -> Messages.showErrorDialog("Please check configuration, repository needs authentication!", " ERROR:"));
             }
             return response.body();
         } catch (IOException | InterruptedException e) {
             if (PluginSettings.getDebugPopupEnabled()) {
-                SwingUtilities.invokeLater(() -> Messages.showErrorDialog(e.getMessage(), " ERROR: \n Url: " + url + "\n"));
+                ApplicationManager.getApplication().invokeLater(() -> Messages.showErrorDialog(e.getMessage(), " ERROR: \n Url: " + url + "\n"));
             }
             e.printStackTrace();
             return null;
@@ -177,7 +198,7 @@ public class TemplateHelper {
         java.net.URL url = new java.net.URL(imageURL);
         InputStream is = url.openStream();
         byte[] bytes = org.apache.commons.io.IOUtils.toByteArray(is);
-        return Base64.encodeBase64String(bytes);
+        return java.util.Base64.getEncoder().encodeToString(bytes);
     }
 /*
     public static Icon getIcon(String name) {

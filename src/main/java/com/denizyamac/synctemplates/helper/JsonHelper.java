@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.ui.Messages;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -45,7 +46,7 @@ public class JsonHelper {
                 return mapper.readValue(from, type);
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
-                SwingUtilities.invokeLater(() -> Messages.showErrorDialog("ERROR", e.getMessage()));
+                ApplicationManager.getApplication().invokeLater(() -> Messages.showErrorDialog("ERROR", e.getMessage()));
                 return null;
             }
         }

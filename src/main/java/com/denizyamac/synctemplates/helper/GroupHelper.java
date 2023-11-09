@@ -13,10 +13,10 @@ import com.denizyamac.synctemplates.ui.TemplateTreeModel;
 import com.intellij.ide.actions.CreateFileFromTemplateDialog;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.roots.ProjectFileIndex;
-import com.intellij.openapi.util.text.StringUtil;
+import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiDirectory;
+import com.intellij.psi.PsiElement;
 import com.intellij.ui.treeStructure.Tree;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -28,6 +28,7 @@ import javax.swing.tree.TreeSelectionModel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -51,14 +52,14 @@ public class GroupHelper {
             String[] orderedGroups = getSplittedGroups(template.getGroup());
             //Direktörlükler
             if (groups.stream().noneMatch(p -> p.getPath().equals(template.getDirectorshipPath()))) {
-                var actionOrGroup = ActionOrGroup.create(template.getDirectorship(), template.getDirectorship(), ActionOrGroupTypeEnum.GROUP, new ArrayList<>(), template.getDirectorshipPath(), null, true, "directorship");
+                var actionOrGroup = ActionOrGroup.create(template.getDirectorship(), template.getDirectorship(), ActionOrGroupTypeEnum.GROUP, new ArrayList<>(), template.getDirectorshipPath(), null, true, "directorship_" + template.getDirectorshipPath());
                 groups.add(actionOrGroup);
             }
-            var directorship = groups.stream().filter(p -> p.getPath().equals(template.getDirectorshipPath())).findFirst().get();
+            var directorship = groups.stream().filter(p -> p.getPath().equals(template.getDirectorshipPath())).findFirst().orElse(null);
             var directorshipChildren = directorship.getChildren();
             //Müdürlükler
             if (directorshipChildren.stream().noneMatch(p -> p.getPath().equals(template.getManagementPath()))) {
-                var actionOrGroup = ActionOrGroup.create(template.getManagement(), template.getManagement(), ActionOrGroupTypeEnum.GROUP, new ArrayList<>(), template.getManagementPath(), template.getManagementSynonyms(), false, "management");
+                var actionOrGroup = ActionOrGroup.create(template.getManagement(), template.getManagement(), ActionOrGroupTypeEnum.GROUP, new ArrayList<>(), template.getManagementPath(), template.getManagementSynonyms(), false, directorship.getUniqueName() + "_management_" + template.getManagementPath());
                 directorshipChildren.add(actionOrGroup);
             }
             for (int i = 0; i < orderedGroups.length; i++) {
@@ -66,12 +67,12 @@ public class GroupHelper {
                 var type = i != orderedGroups.length - 1 ? ActionOrGroupTypeEnum.GROUP : ActionOrGroupTypeEnum.ACTION;
                 var path = getPath(orderedGroups, i);
 
-                var management = directorshipChildren.stream().filter(p -> p.getPath().equals(template.getManagementPath())).findAny().get();
+                var management = directorshipChildren.stream().filter(p -> p.getPath().equals(template.getManagementPath())).findAny().orElse(null);
                 int layer = 0;
                 ActionOrGroup parent = management;
                 while (layer < i) {
                     String _path = getPath(orderedGroups, layer);
-                    parent = parent.getChildren().stream().filter(p -> p.getPath().equals(_path)).findFirst().get();
+                    parent = parent.getChildren().stream().filter(p -> p.getPath().equals(_path)).findFirst().orElse(null);
                     layer++;
                 }
                 if (parent.getChildren().stream().noneMatch(p -> path.equals(p.getPath()))) {
@@ -102,14 +103,15 @@ public class GroupHelper {
 
     public static void clean() {
         var actionManager = ActionManager.getInstance();
-        var mainMenu = (DefaultActionGroup) actionManager.getAction(IdeActions.GROUP_MAIN_MENU);
-        var pluginMenu = Arrays.stream(mainMenu.getChildActionsOrStubs()).filter(p -> actionManager.getId(p).equals(PluginConstants.PLUGIN_ACTION_GROUP)).findFirst();
-        if (pluginMenu.isPresent()) {
-            var directorshipActions = Arrays.stream(((DefaultActionGroup) pluginMenu.get()).getChildActionsOrStubs()).filter(p -> actionManager.getId(p).startsWith(PluginConstants.actionIdPrefix)).collect(Collectors.toList());
+        var pluginMenu = actionManager.getAction(PluginConstants.PLUGIN_ACTION_GROUP);
+        if (pluginMenu != null) {
+            var _pluginMenu = (DefaultActionGroup) pluginMenu;
+            var directorshipActions = Arrays.stream(_pluginMenu.getChildActionsOrStubs()).filter(p -> actionManager.getId(p).startsWith(PluginConstants.actionIdPrefix)).collect(Collectors.toList());
             for (var parent : directorshipActions) {
-                ((DefaultActionGroup) pluginMenu.get()).remove(parent);
+                _pluginMenu.remove(parent);
             }
         }
+
 
         List<String> customActionIds = actionManager.getActionIdList(PluginConstants.actionIdPrefix);
         for (var customActionId : customActionIds) {
@@ -164,19 +166,22 @@ public class GroupHelper {
             var children = item.getChildren();
             walkAmongChildren(children, grp);
         }
-        if (roots.size() > 0) {
+
+        if (!roots.isEmpty()) {
+            var menuName = PluginConstants.PLUGIN_ACTION_GROUP;
+            var mainMenu = (DefaultActionGroup) actionManager.getAction(menuName);
             for (var root : roots) {
                 var action = actionManager.getAction(root.getId());
-                var menuName = PluginConstants.PLUGIN_ACTION_GROUP;
-                var mainMenu = (DefaultActionGroup) actionManager.getAction(menuName);
                 mainMenu.add(action);
-                PluginSettings.addParentMenu(menuName);
-            }
 
+                PluginSettings.addParentMenu(root.getName());
+            }
+            actionManager.replaceAction(menuName, mainMenu);
         }
     }
 
     public static Tree generateTree(Template[] templates) {
+
         var groupStructure = generateGroupStructure(templates);
         var actionManager = ActionManager.getInstance();
         List<ActionOrGroup> roots = new ArrayList<>();
@@ -247,7 +252,7 @@ public class GroupHelper {
                     public void update(@NotNull AnActionEvent e) {
                         Presentation presentation = e.getPresentation();
                         // Hide the action if the clicked folder is not a Java package
-                        presentation.setVisible(GroupHelper.isPackage(e));
+                        presentation.setEnabled(GroupHelper.isPackage(e));
                     }
                 };
                 if (item.getManagementSynonyms() != null)
@@ -264,7 +269,7 @@ public class GroupHelper {
                     @Override
                     public void update(@NotNull AnActionEvent e) {
                         Presentation presentation = e.getPresentation();
-                        presentation.setEnabledAndVisible(GroupHelper.isPackage(e));
+                        presentation.setEnabled(GroupHelper.isPackage(e));
                     }
 
                     @Override
@@ -284,22 +289,50 @@ public class GroupHelper {
     public static Boolean isPackage(AnActionEvent e) {
         try {
             Project project = e.getProject();
+
+            Object data = e.getData(LangDataKeys.PSI_ELEMENT_ARRAY);
+            if (data != null) {
+                data = Objects.requireNonNull(e.getData(LangDataKeys.PSI_ELEMENT_ARRAY))[0];
+                assert project != null;
+                ProjectRootManager rootMan = ProjectRootManager.getInstance(project);
+                VirtualFile[] roots = rootMan.getContentSourceRoots();
+                VirtualFile virtualFile;
+                if (data instanceof PsiDirectory) {
+                    virtualFile = ((PsiDirectory) data).getVirtualFile();
+                } else {
+                    virtualFile = ((PsiElement) data).getContainingFile().getVirtualFile();
+                }
+
+                return Arrays.stream(roots).anyMatch(p -> virtualFile.getPath().startsWith(p.getParent().getPath()));
+            }
+            /*
             Object data = e.getData(LangDataKeys.PSI_ELEMENT);
             if (data instanceof PsiDirectory) {
                 PsiDirectory directory = (PsiDirectory) e.getData(LangDataKeys.PSI_ELEMENT);
                 if (project == null || directory == null) return false;
                 // Get the VirtualFile object for the selected directory
                 VirtualFile virtualFile = directory.getVirtualFile();
-                String c = ProjectFileIndex.getInstance(project).getPackageNameByDirectory(virtualFile);
-                return StringUtil.isNotEmpty(c);
+                return ProjectFileIndex.getInstance(project).isInSourceContent(virtualFile);
             } else {
                 data = e.getData(LangDataKeys.VIRTUAL_FILE);
                 if (data != null) {
-                    String c = ProjectFileIndex.getInstance(project).getPackageNameByDirectory(((VirtualFile) data).getParent());
-                    return StringUtil.isNotEmpty(c);
+                    return ProjectFileIndex.getInstance(project).isInSourceContent(((VirtualFile) data).getParent());//.getPackageNameByDirectory(((VirtualFile) data).getParent());
                 }
             }
+            data = e.getData(LangDataKeys.SELECTED_ITEMS);
+            if (data != null) {
+                data = e.getData(LangDataKeys.SELECTED_ITEMS)[0];
+                ProjectRootManager rootMan = ProjectRootManager.getInstance(project);
+                VirtualFile[] roots = rootMan.getContentSourceRoots();
+                if (data instanceof BasePsiNode<?>) {
+                    VirtualFile virtualFile = ((BasePsiNode<?>) data).getVirtualFile();
+                    return Arrays.stream(roots).anyMatch(p -> virtualFile.getPath().startsWith(p.getParent().getPath()));
+                } else if (data instanceof PsiElement) {
+                    VirtualFile virtualFile = ((PsiElement) data).getContainingFile().getVirtualFile();
+                    return Arrays.stream(roots).anyMatch(p -> virtualFile.getPath().startsWith(p.getParent().getParent().getPath()));
+                }
 
+            }*/
         } catch (Exception ignored) {
         }
         return false;

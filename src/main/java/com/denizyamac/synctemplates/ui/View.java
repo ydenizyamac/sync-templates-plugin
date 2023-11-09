@@ -3,6 +3,7 @@ package com.denizyamac.synctemplates.ui;
 import com.denizyamac.synctemplates.config.PluginSettings;
 import com.denizyamac.synctemplates.constants.PluginConstants;
 import com.denizyamac.synctemplates.helper.GroupHelper;
+import com.denizyamac.synctemplates.helper.TemplateHelper;
 import com.denizyamac.synctemplates.model.ActionOrGroup;
 import com.denizyamac.synctemplates.model.Template;
 import com.intellij.openapi.actionSystem.ActionManager;
@@ -10,9 +11,9 @@ import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.ui.DialogWrapper;
+import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.treeStructure.Tree;
-import com.twelvemonkeys.lang.StringUtil;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -196,6 +197,7 @@ public class View extends DialogWrapper {
 
     @Override
     public void show() {
+        TemplateHelper.getTemplates(false);
         Template[] templates = PluginSettings.getTemplates();
         setTree(templates);
         setOnKeyPress(this::search);

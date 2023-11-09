@@ -25,6 +25,6 @@ public class SearchAction extends AnAction {
     public void update(AnActionEvent e) {
         Presentation presentation = e.getPresentation();
         // Hide the action if the clicked folder is not a Java package
-        presentation.setVisible(GroupHelper.isPackage(e));
+        presentation.setEnabled(GroupHelper.isPackage(e));
     }
 }
