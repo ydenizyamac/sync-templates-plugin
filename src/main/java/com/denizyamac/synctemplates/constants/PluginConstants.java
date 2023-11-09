@@ -25,6 +25,9 @@ public class PluginConstants {
 
     public static class Helper {
         public static String getConfigUrl() {
+            var add = !PluginSettings.getRepositoryUrl().endsWith("/");
+            if (add)
+                return PluginSettings.getRepositoryUrl() + "/" + PluginSettings.getConfigFileName();
             return PluginSettings.getRepositoryUrl() + PluginSettings.getConfigFileName();
         }
 
