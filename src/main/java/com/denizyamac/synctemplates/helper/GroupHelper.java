@@ -12,29 +12,24 @@ import com.denizyamac.synctemplates.ui.CellRenderer;
 import com.denizyamac.synctemplates.ui.CreateMultipleFromTemplateDialog;
 import com.denizyamac.synctemplates.ui.MultipleTemplatePopup;
 import com.denizyamac.synctemplates.ui.TemplateTreeModel;
-import com.intellij.ide.actions.CreateFileAction;
-import com.intellij.ide.fileTemplates.FileTemplate;
-import com.intellij.ide.fileTemplates.FileTemplateUtil;
 import com.intellij.openapi.actionSystem.*;
-import com.intellij.openapi.application.WriteAction;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectRootManager;
+import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.vfs.VirtualFileVisitor;
 import com.intellij.psi.PsiDirectory;
 import com.intellij.psi.PsiElement;
 import com.intellij.ui.treeStructure.Tree;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeSelectionModel;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -61,6 +56,7 @@ public class GroupHelper {
                 groups.add(actionOrGroup);
             }
             var directorship = groups.stream().filter(p -> p.getPath().equals(template.getDirectorshipPath())).findFirst().orElse(null);
+            assert directorship != null;
             var directorshipChildren = directorship.getChildren();
             //Müdürlükler
             if (directorshipChildren.stream().noneMatch(p -> p.getPath().equals(template.getManagementPath()))) {
@@ -78,9 +74,11 @@ public class GroupHelper {
                 ActionOrGroup parent = management;
                 while (layer < i) {
                     String _path = getPath(orderedGroups, layer);
+                    assert parent != null;
                     parent = parent.getChildren().stream().filter(p -> p.getPath().equals(_path)).findFirst().orElse(null);
                     layer++;
                 }
+                assert parent != null;
                 if (parent.getChildren().stream().noneMatch(p -> path.equals(p.getPath()))) {
                     String uniqueName = template.getDirectorship() + "_" + template.getManagement() + "_" + path;
                     String[] synonyms = null;
@@ -134,7 +132,6 @@ public class GroupHelper {
     }
 
     private static void walkAmongChildren(List<ActionOrGroup> children, DefaultActionGroup grp) {
-        var actionManager = ActionManager.getInstance();
         for (var child : children) {
             AnAction actionOrGroup = (AnAction) generateGroup(child);
             grp.add(actionOrGroup);
@@ -148,7 +145,6 @@ public class GroupHelper {
     private static void walkAmongChildren_tree(List<ActionOrGroup> children, DefaultMutableTreeNode grp) {
         for (var child : children) {
             DefaultMutableTreeNode childGrp = generateTreeNode(child);
-            AtomicReference<Boolean> exist = new AtomicReference<>(false);
             grp.add(childGrp);
             if (child.getType() == ActionOrGroupTypeEnum.GROUP) {
                 List<ActionOrGroup> _children = child.getChildren();
@@ -187,8 +183,6 @@ public class GroupHelper {
     public static Tree generateTree(Template[] templates) {
 
         var groupStructure = generateGroupStructure(templates);
-        var actionManager = ActionManager.getInstance();
-        List<ActionOrGroup> roots = new ArrayList<>();
         TemplateTreeModel treeModel = new TemplateTreeModel();
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("Templates");
 
@@ -246,9 +240,6 @@ public class GroupHelper {
         return new DefaultMutableTreeNode(item);
     }
 
-    protected static final Logger LOG = Logger.getInstance(GroupHelper.class);
-
-
     private static List<String> getAllJavaPackages(AnActionEvent e, String currentModule) {
         Project project = e.getProject();
         assert project != null;
@@ -261,7 +252,7 @@ public class GroupHelper {
             if (root.getPath().startsWith(currentModule) && Arrays.stream(contentRoots).noneMatch(p -> !p.getPath().equals(currentModule) && p.getPath().startsWith(currentModule) && root.getPath().startsWith(p.getPath()))) {
                 var relativePath = getRelativePath(root.getPath(), currentModule);
                 packageList.add(relativePath);
-                collectPackages(rootMan.getContentRoots(), root, currentModule, packageList);
+                collectPackages(root, currentModule, packageList);
             }
         }
         return packageList;
@@ -269,15 +260,25 @@ public class GroupHelper {
 
     private static String getFileModulePath(Project project, String filePath) {
         ProjectRootManager rootMan = ProjectRootManager.getInstance(project);
-        return Arrays.stream(rootMan.getContentRoots()).sorted(Comparator.comparingInt(r -> ((VirtualFile) r).getPath().length()).reversed()).filter(p -> filePath.startsWith(p.getPath())).findFirst().get().getPath();
+        var mod = Arrays.stream(rootMan.getContentRoots()).sorted(Comparator.comparingInt(r -> ((VirtualFile) r).getPath().length()).reversed()).filter(p -> filePath.startsWith(p.getPath())).findFirst();
+        return mod.map(VirtualFile::getPath).orElse(null);
     }
 
-    private static void collectPackages(VirtualFile[] contentRoots, VirtualFile directory, String basePath, List<String> packages) {
+    private static void collectPackages(VirtualFile directory, String basePath, List<String> packages) {
+
         for (VirtualFile child : directory.getChildren()) {
             if (child.isDirectory()) {
-                String relativePath = getRelativePath(child.getPath(), basePath);
-                packages.add(relativePath);//.replace('/', '.')
-                collectPackages(contentRoots, child, basePath, packages);
+                VfsUtilCore.visitChildrenRecursively(child, new VirtualFileVisitor<VirtualFile>() {
+                    @Override
+                    public boolean visitFile(@NotNull VirtualFile file) {
+                        if (file.isDirectory()) {
+                            String relativePath = getRelativePath(file.getPath(), basePath);
+                            packages.add(relativePath);
+                            return true;
+                        }
+                        return false;
+                    }
+                });
             }
         }
 
@@ -322,12 +323,10 @@ public class GroupHelper {
                     @Override
                     public void actionPerformed(@NotNull AnActionEvent e) {
                         String currentModule = getFileModulePath(e.getProject(), getCurrentDirPath(e));
-                        SwingUtilities.invokeLater(() -> {
-                            MultipleTemplatePopup.showPopup(item.getName(), item.getFiles(), getCurrentDirPath(e), getAllJavaPackages(e, currentModule).stream().sorted().toArray(String[]::new), (Map<String, TemplateInput> inputs) -> {
-                                Project _project = Objects.requireNonNull(e.getProject());
-                                new CreateMultipleFromTemplateDialog(_project, item, inputs, currentModule).create();
-                            });
-                        });
+                        SwingUtilities.invokeLater(() -> MultipleTemplatePopup.showPopup(item.getName(), item.getFiles(), getCurrentDirPath(e), getAllJavaPackages(e, currentModule).stream().sorted().toArray(String[]::new), (Map<String, TemplateInput> inputs) -> {
+                            Project _project = Objects.requireNonNull(e.getProject());
+                            new CreateMultipleFromTemplateDialog(_project, item, inputs, currentModule).create();
+                        }));
 
                     }
                 };
@@ -340,26 +339,12 @@ public class GroupHelper {
 
     }
 
-    private @NotNull PsiElement createFile(@Nullable String fileName,
-                                           @NotNull FileTemplate template,
-                                           @NotNull Properties properties,
-                                           @NotNull PsiDirectory myDirectory) throws Exception {
-        if (fileName != null) {
-            String newName = FileTemplateUtil.mergeTemplate(properties, fileName, false);
-            CreateFileAction.MkDirs mkDirs = WriteAction.compute(() -> new CreateFileAction.MkDirs(newName, myDirectory));
-            return FileTemplateUtil.createFromTemplate(template, mkDirs.newName, properties, mkDirs.directory);
-        }
-        return FileTemplateUtil.createFromTemplate(template, null, properties, myDirectory);
-    }
-
     private static String getCurrentDirPath(AnActionEvent e) {
         Project project = e.getProject();
         Object data = e.getData(LangDataKeys.PSI_ELEMENT_ARRAY);
         if (data != null) {
             data = Objects.requireNonNull(e.getData(LangDataKeys.PSI_ELEMENT_ARRAY))[0];
             assert project != null;
-            ProjectRootManager rootMan = ProjectRootManager.getInstance(project);
-            VirtualFile[] roots = rootMan.getContentSourceRoots();
             VirtualFile virtualFile;
             if (data instanceof PsiDirectory) {
                 virtualFile = ((PsiDirectory) data).getVirtualFile();

@@ -42,7 +42,7 @@ public class CreateMultipleFromTemplateDialog extends DialogWrapper {
     private static final Logger LOG = Logger.getInstance(com.intellij.ide.fileTemplates.ui.CreateFromTemplateDialog.class);
     @NotNull
     private final Project myProject;
-    private List<PsiElement> myCreatedElements;
+    private final List<PsiElement> myCreatedElements;
     private final CreateFromTemplatePanel myAttrPanel;
     private final JComponent myAttrComponent;
     @NotNull
@@ -164,11 +164,12 @@ public class CreateMultipleFromTemplateDialog extends DialogWrapper {
         Path fPath = Paths.get(path);
         File _file = new File(mdPath.resolve(fPath).toString());
         VirtualFile directory = LocalFileSystem.getInstance().findFileByIoFile(_file);
+        assert directory != null;
         return psiManager.findDirectory(directory);
     }
 
     private String getPackage(String path) {
-        Path base = Paths.get(myProject.getBasePath());
+        Path base = Paths.get(Objects.requireNonNull(myProject.getBasePath()));
         Path file = Paths.get(path);
         return base.relativize(file).toString();
     }
@@ -199,12 +200,13 @@ public class CreateMultipleFromTemplateDialog extends DialogWrapper {
         Messages.showMessageDialog(myProject, filterMessage(e.getMessage(), template), getErrorMessage(template), Messages.getErrorIcon());
     }
 
+    @SuppressWarnings("UnstableApiUsage")
     private @NlsContexts.DialogTitle String getErrorMessage(FileTemplate template) {
         return FileTemplateUtil.findHandler(template).getErrorMessage();
     }
 
-    @Nullable
-    private @NlsContexts.DialogMessage String filterMessage(@NlsContexts.DialogMessage String message, FileTemplate template) {
+    @SuppressWarnings("UnstableApiUsage")
+    private @NlsContexts.DialogMessage @NotNull String filterMessage(@NlsContexts.DialogMessage String message, FileTemplate template) {
         if (message == null) {
             message = IdeBundle.message("dialog.message.unknown.error");
         }
