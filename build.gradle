@@ -6,7 +6,7 @@ configurations.all {
     exclude group: 'org.slf4j', module: 'slf4j-binding'
 }
 group 'com.denizyamac'
-version '0.0.8-SNAPSHOT'
+version '0.0.9-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -77,6 +77,12 @@ patchPluginXml {
         <h2>Version 0.0.8:</h2>
         <ul>
             <li>**FIX**: Duplicated update button and hiding menu in non-package files.</li>
+        </ul>
+    </div>
+     <div>
+        <h2>Version 0.0.9:</h2>
+        <ul>
+            <li>**New feature**: Multiple template support!</li>
         </ul>
     </div>
 """

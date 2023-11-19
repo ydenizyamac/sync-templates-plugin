@@ -9,10 +9,16 @@ import com.intellij.ide.fileTemplates.FileTemplate;
 import com.intellij.ide.fileTemplates.FileTemplateManager;
 import com.intellij.ide.fileTemplates.FileTemplateUtil;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.PsiDirectory;
+import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiFileFactory;
 import com.intellij.util.ArrayUtil;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.http.HttpStatus;
 
 import java.io.IOException;
@@ -25,10 +31,12 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TemplateHelper {
+
     public static void getTemplates(boolean force) {
         var directorships = TemplateHelper.getDirectorships(force);
         if (directorships != null) {
@@ -61,20 +69,21 @@ public class TemplateHelper {
                 FileTemplateManager fileTemplateManager = FileTemplateManager.getDefaultInstance();
                 FileTemplate[] fileTemplates = fileTemplateManager.getInternalTemplates();
                 for (var templateItem : templates) {
-                    String templateName = templateItem.getTemplateName();
+                    String[] files = templateItem.getFiles();
+                    for (var file : files) {
+                        String uniqueName = templateItem.getTemplateFileUniqueName(file);
+                        String templateStr = PluginSettings.getTemplateContent(uniqueName);
+                        if (templateStr == null || forceUpdate) {
+                            templateStr = TemplateHelper.doCall(PluginConstants.Helper.getFileUrl(templateItem.getDirectorshipPath(), templateItem.getManagementPath(), file));
+                        }
 
-                    String templateExtension = templateItem.getTemplateExtension();
-                    String templateStr = PluginSettings.getTemplateContent(templateName);
-                    if (templateStr == null || forceUpdate) {
-                        templateStr = TemplateHelper.doCall(PluginConstants.Helper.getFileUrl(templateItem.getDirectorshipPath(), templateItem.getManagementPath(), templateName, templateExtension));
-                    }
-
-                    if (templateStr != null) {
-                        PluginSettings.setTemplateContent(templateName, templateStr);
-                        if (Arrays.stream(fileTemplates).noneMatch(p -> p.getName().equals(templateName))) {
-                            if (!templateStr.isBlank() && !templateStr.isEmpty()) {
-                                var template = FileTemplateUtil.createTemplate(templateItem.getTemplateUniqueName(), templateExtension, templateStr, fileTemplates);
-                                fileTemplates = ArrayUtil.append(fileTemplates, template);
+                        if (templateStr != null) {
+                            PluginSettings.setTemplateContent(uniqueName, templateStr);
+                            if (Arrays.stream(fileTemplates).noneMatch(p -> p.getName().equals(uniqueName))) {
+                                if (!templateStr.isBlank() && !templateStr.isEmpty()) {
+                                    var template = FileTemplateUtil.createTemplate(templateItem.getTemplateFileUniqueName(file), FilenameUtils.getExtension(file), templateStr, fileTemplates);
+                                    fileTemplates = ArrayUtil.append(fileTemplates, template);
+                                }
                             }
                         }
                     }

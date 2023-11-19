@@ -14,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 public class ActionOrGroup {
     private String name;
-    private String templateName;
+    private String[] files;
     private ActionOrGroupTypeEnum type;
     private List<ActionOrGroup> children;
     private String path;
@@ -24,14 +24,13 @@ public class ActionOrGroup {
     private String[] managementSynonyms;
     private String uniqueName;
 
-    public static ActionOrGroup create(String name, String templateName, ActionOrGroupTypeEnum type, List<ActionOrGroup> children, String path, String[] synonyms, Boolean root, String uniqueName) {
-        return new ActionOrGroup(name, templateName, type, children, path, synonyms, root, uniqueName);
+    public static ActionOrGroup create(String name, String uniqueName, ActionOrGroupTypeEnum type, List<ActionOrGroup> children, String path, String[] synonyms, Boolean root) {
+        return new ActionOrGroup(name, uniqueName, type, children, path, synonyms, root);
     }
 
 
-    public ActionOrGroup(String name, String templateName, ActionOrGroupTypeEnum type, List<ActionOrGroup> children, String path, String[] synonyms, Boolean root,String uniqueName) {
+    public ActionOrGroup(String name, String uniqueName, ActionOrGroupTypeEnum type, List<ActionOrGroup> children, String path, String[] synonyms, Boolean root) {
         this.name = name;
-        this.templateName = templateName;
         this.type = type;
         this.children = children;
         this.path = path;
@@ -41,7 +40,10 @@ public class ActionOrGroup {
     }
 
     public String getId() {
-        return PluginConstants.Helper.getActionId(uniqueName+"_"+name);
+        return PluginConstants.Helper.getActionId(uniqueName + "_" + name);
     }
 
+    public String getTemplateFileUniqueName(String file) {
+        return uniqueName + file;
+    }
 }

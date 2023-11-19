@@ -22,6 +22,8 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
@@ -37,6 +39,7 @@ public class View extends DialogWrapper {
     private Tree tree;
     @Setter
     private DataContext dataContext;
+    private final int keyTreshold = 3;
 
     public View(AnActionEvent e) {
         super(true);
@@ -73,9 +76,35 @@ public class View extends DialogWrapper {
 
             @Override
             public void keyReleased(KeyEvent e) {
-                runnable.run();
+                if (searchTextField.getText().length() > keyTreshold - 1 || (e.getKeyCode() == KeyEvent.VK_BACK_SPACE && searchTextField.getText().length() == keyTreshold - 1)) {
+                    runnable.run();
+                }
             }
         });
+    }
+
+    private void expandAll(Tree tree, boolean expand) {
+        TreeNode root = (TreeNode) tree.getModel().getRoot();
+        expandAll(tree, new TreePath(root), expand);
+    }
+
+    private void expandAll(Tree tree, TreePath parent, boolean expand) {
+        // Traverse children
+        TreeNode node = (TreeNode) parent.getLastPathComponent();
+        if (node.getChildCount() >= 0) {
+            for (int i = 0; i < node.getChildCount(); i++) {
+                TreeNode child = node.getChildAt(i);
+                TreePath path = parent.pathByAddingChild(child);
+                expandAll(tree, path, expand);
+            }
+        }
+
+        // Expansion or collapse should happen bottom-up to avoid concurrent modification issues
+        if (expand) {
+            tree.expandPath(parent);
+        } else {
+            tree.collapsePath(parent);
+        }
     }
 
     @Override
@@ -209,6 +238,9 @@ public class View extends DialogWrapper {
         String text = getSearchTextField().getText();
         Template[] templates = Arrays.stream(PluginSettings.getTemplates()).filter(p -> StringUtil.containsIgnoreCase(p.getGroup(), text)).toArray(Template[]::new);
         setTree(templates);
+        expandAll(tree, text.length() >= keyTreshold);
+
+
     }
 
 

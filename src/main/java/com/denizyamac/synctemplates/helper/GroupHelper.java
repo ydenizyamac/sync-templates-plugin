@@ -1,6 +1,5 @@
 package com.denizyamac.synctemplates.helper;
 
-import com.denizyamac.synctemplates.action.DynamicCreateFileTemplateAction;
 import com.denizyamac.synctemplates.action.SearchAction;
 import com.denizyamac.synctemplates.action.UpdateTemplatesAction;
 import com.denizyamac.synctemplates.config.PluginSettings;
@@ -8,10 +7,17 @@ import com.denizyamac.synctemplates.constants.PluginConstants;
 import com.denizyamac.synctemplates.model.ActionOrGroup;
 import com.denizyamac.synctemplates.model.ActionOrGroupTypeEnum;
 import com.denizyamac.synctemplates.model.Template;
+import com.denizyamac.synctemplates.model.TemplateInput;
 import com.denizyamac.synctemplates.ui.CellRenderer;
+import com.denizyamac.synctemplates.ui.CreateMultipleFromTemplateDialog;
+import com.denizyamac.synctemplates.ui.MultipleTemplatePopup;
 import com.denizyamac.synctemplates.ui.TemplateTreeModel;
-import com.intellij.ide.actions.CreateFileFromTemplateDialog;
+import com.intellij.ide.actions.CreateFileAction;
+import com.intellij.ide.fileTemplates.FileTemplate;
+import com.intellij.ide.fileTemplates.FileTemplateUtil;
 import com.intellij.openapi.actionSystem.*;
+import com.intellij.openapi.application.WriteAction;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -21,14 +27,13 @@ import com.intellij.ui.treeStructure.Tree;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeSelectionModel;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -52,14 +57,15 @@ public class GroupHelper {
             String[] orderedGroups = getSplittedGroups(template.getGroup());
             //Direktörlükler
             if (groups.stream().noneMatch(p -> p.getPath().equals(template.getDirectorshipPath()))) {
-                var actionOrGroup = ActionOrGroup.create(template.getDirectorship(), template.getDirectorship(), ActionOrGroupTypeEnum.GROUP, new ArrayList<>(), template.getDirectorshipPath(), null, true, "directorship_" + template.getDirectorshipPath());
+                var actionOrGroup = ActionOrGroup.create(template.getDirectorship(), "directorship_" + template.getDirectorshipPath(), ActionOrGroupTypeEnum.GROUP, new ArrayList<>(), template.getDirectorshipPath(), null, true);
                 groups.add(actionOrGroup);
             }
             var directorship = groups.stream().filter(p -> p.getPath().equals(template.getDirectorshipPath())).findFirst().orElse(null);
             var directorshipChildren = directorship.getChildren();
             //Müdürlükler
             if (directorshipChildren.stream().noneMatch(p -> p.getPath().equals(template.getManagementPath()))) {
-                var actionOrGroup = ActionOrGroup.create(template.getManagement(), template.getManagement(), ActionOrGroupTypeEnum.GROUP, new ArrayList<>(), template.getManagementPath(), template.getManagementSynonyms(), false, directorship.getUniqueName() + "_management_" + template.getManagementPath());
+                var uName = directorship.getUniqueName() + "_management_" + template.getManagementPath();
+                var actionOrGroup = ActionOrGroup.create(template.getManagement(), uName, ActionOrGroupTypeEnum.GROUP, new ArrayList<>(), template.getManagementPath(), template.getManagementSynonyms(), false);
                 directorshipChildren.add(actionOrGroup);
             }
             for (int i = 0; i < orderedGroups.length; i++) {
@@ -76,17 +82,16 @@ public class GroupHelper {
                     layer++;
                 }
                 if (parent.getChildren().stream().noneMatch(p -> path.equals(p.getPath()))) {
-                    String tName = name;
                     String uniqueName = template.getDirectorship() + "_" + template.getManagement() + "_" + path;
                     String[] synonyms = null;
                     if (type == ActionOrGroupTypeEnum.ACTION) {
                         management.setManagement(template.getManagement());
-                        management.setManagementSynonyms(template.getManagementSynonyms());
-                        tName = template.getTemplateName();
+                        management.setManagementSynonyms(template.getManagementSynonyms());//TODO:Deniz
                         synonyms = template.getSynonyms();
                         uniqueName = template.getTemplateUniqueName();
                     }
-                    var actionOrGroup = ActionOrGroup.create(name, tName, type, new ArrayList<>(), path, synonyms, false, uniqueName);
+                    var actionOrGroup = ActionOrGroup.create(name, uniqueName, type, new ArrayList<>(), path, synonyms, false);
+                    actionOrGroup.setFiles(template.getFiles());
                     parent.getChildren().add(actionOrGroup);
                 }
             }
@@ -176,7 +181,6 @@ public class GroupHelper {
 
                 PluginSettings.addParentMenu(root.getName());
             }
-            actionManager.replaceAction(menuName, mainMenu);
         }
     }
 
@@ -242,6 +246,48 @@ public class GroupHelper {
         return new DefaultMutableTreeNode(item);
     }
 
+    protected static final Logger LOG = Logger.getInstance(GroupHelper.class);
+
+
+    private static List<String> getAllJavaPackages(AnActionEvent e, String currentModule) {
+        Project project = e.getProject();
+        assert project != null;
+        ProjectRootManager rootMan = ProjectRootManager.getInstance(project);
+
+        List<String> packageList = new ArrayList<>();
+        var contentSourceRoots = rootMan.getContentSourceRoots();
+        var contentRoots = rootMan.getContentRoots();
+        for (var root : contentSourceRoots) {
+            if (root.getPath().startsWith(currentModule) && Arrays.stream(contentRoots).noneMatch(p -> !p.getPath().equals(currentModule) && p.getPath().startsWith(currentModule) && root.getPath().startsWith(p.getPath()))) {
+                var relativePath = getRelativePath(root.getPath(), currentModule);
+                packageList.add(relativePath);
+                collectPackages(rootMan.getContentRoots(), root, currentModule, packageList);
+            }
+        }
+        return packageList;
+    }
+
+    private static String getFileModulePath(Project project, String filePath) {
+        ProjectRootManager rootMan = ProjectRootManager.getInstance(project);
+        return Arrays.stream(rootMan.getContentRoots()).sorted(Comparator.comparingInt(r -> ((VirtualFile) r).getPath().length()).reversed()).filter(p -> filePath.startsWith(p.getPath())).findFirst().get().getPath();
+    }
+
+    private static void collectPackages(VirtualFile[] contentRoots, VirtualFile directory, String basePath, List<String> packages) {
+        for (VirtualFile child : directory.getChildren()) {
+            if (child.isDirectory()) {
+                String relativePath = getRelativePath(child.getPath(), basePath);
+                packages.add(relativePath);//.replace('/', '.')
+                collectPackages(contentRoots, child, basePath, packages);
+            }
+        }
+
+    }
+
+    private static String getRelativePath(String absolutePath, String basePath) {
+        //return absolutePath.substring(basePath.length() + 1); // +1 to remove the leading slash
+        return Paths.get(basePath).relativize(Paths.get(absolutePath)).toString();
+    }
+
     private static Object generateGroup(ActionOrGroup item) {
         var actionManager = ActionManager.getInstance();
         if (item.getType() == ActionOrGroupTypeEnum.GROUP) {
@@ -265,7 +311,8 @@ public class GroupHelper {
             if (action == null) {
                 //var icon = TemplateHelper.getIcon(item.getIcon());
                 var icon = getIconFromResource("fileIcon.png");
-                action = new DynamicCreateFileTemplateAction(item.getName(), icon) {
+                action = new AnAction(item::getName, icon) {
+
                     @Override
                     public void update(@NotNull AnActionEvent e) {
                         Presentation presentation = e.getPresentation();
@@ -273,9 +320,15 @@ public class GroupHelper {
                     }
 
                     @Override
-                    protected void buildDialog(@NotNull Project project, @NotNull PsiDirectory directory, CreateFileFromTemplateDialog.@NotNull Builder builder) {
-                        var kind = "Class";
-                        builder.setTitle(item.getName()).addKind(kind, icon, item.getUniqueName());
+                    public void actionPerformed(@NotNull AnActionEvent e) {
+                        String currentModule = getFileModulePath(e.getProject(), getCurrentDirPath(e));
+                        SwingUtilities.invokeLater(() -> {
+                            MultipleTemplatePopup.showPopup(item.getName(), item.getFiles(), getCurrentDirPath(e), getAllJavaPackages(e, currentModule).stream().sorted().toArray(String[]::new), (Map<String, TemplateInput> inputs) -> {
+                                Project _project = Objects.requireNonNull(e.getProject());
+                                new CreateMultipleFromTemplateDialog(_project, item, inputs, currentModule).create();
+                            });
+                        });
+
                     }
                 };
                 addSynonyms(action, item.getSynonyms());
@@ -284,6 +337,39 @@ public class GroupHelper {
             }
             return action;
         }
+
+    }
+
+    private @NotNull PsiElement createFile(@Nullable String fileName,
+                                           @NotNull FileTemplate template,
+                                           @NotNull Properties properties,
+                                           @NotNull PsiDirectory myDirectory) throws Exception {
+        if (fileName != null) {
+            String newName = FileTemplateUtil.mergeTemplate(properties, fileName, false);
+            CreateFileAction.MkDirs mkDirs = WriteAction.compute(() -> new CreateFileAction.MkDirs(newName, myDirectory));
+            return FileTemplateUtil.createFromTemplate(template, mkDirs.newName, properties, mkDirs.directory);
+        }
+        return FileTemplateUtil.createFromTemplate(template, null, properties, myDirectory);
+    }
+
+    private static String getCurrentDirPath(AnActionEvent e) {
+        Project project = e.getProject();
+        Object data = e.getData(LangDataKeys.PSI_ELEMENT_ARRAY);
+        if (data != null) {
+            data = Objects.requireNonNull(e.getData(LangDataKeys.PSI_ELEMENT_ARRAY))[0];
+            assert project != null;
+            ProjectRootManager rootMan = ProjectRootManager.getInstance(project);
+            VirtualFile[] roots = rootMan.getContentSourceRoots();
+            VirtualFile virtualFile;
+            if (data instanceof PsiDirectory) {
+                virtualFile = ((PsiDirectory) data).getVirtualFile();
+            } else {
+                assert ((PsiElement) data).getContainingFile().getParent() != null;
+                virtualFile = ((PsiElement) data).getContainingFile().getParent().getVirtualFile();
+            }
+            return virtualFile.getPath();
+        }
+        return null;
     }
 
     public static Boolean isPackage(AnActionEvent e) {
@@ -303,36 +389,8 @@ public class GroupHelper {
                     virtualFile = ((PsiElement) data).getContainingFile().getVirtualFile();
                 }
 
-                return Arrays.stream(roots).anyMatch(p -> virtualFile.getPath().startsWith(p.getParent().getPath()));
+                return Arrays.stream(roots).anyMatch(p -> virtualFile.getPath().startsWith(p.getPath()));
             }
-            /*
-            Object data = e.getData(LangDataKeys.PSI_ELEMENT);
-            if (data instanceof PsiDirectory) {
-                PsiDirectory directory = (PsiDirectory) e.getData(LangDataKeys.PSI_ELEMENT);
-                if (project == null || directory == null) return false;
-                // Get the VirtualFile object for the selected directory
-                VirtualFile virtualFile = directory.getVirtualFile();
-                return ProjectFileIndex.getInstance(project).isInSourceContent(virtualFile);
-            } else {
-                data = e.getData(LangDataKeys.VIRTUAL_FILE);
-                if (data != null) {
-                    return ProjectFileIndex.getInstance(project).isInSourceContent(((VirtualFile) data).getParent());//.getPackageNameByDirectory(((VirtualFile) data).getParent());
-                }
-            }
-            data = e.getData(LangDataKeys.SELECTED_ITEMS);
-            if (data != null) {
-                data = e.getData(LangDataKeys.SELECTED_ITEMS)[0];
-                ProjectRootManager rootMan = ProjectRootManager.getInstance(project);
-                VirtualFile[] roots = rootMan.getContentSourceRoots();
-                if (data instanceof BasePsiNode<?>) {
-                    VirtualFile virtualFile = ((BasePsiNode<?>) data).getVirtualFile();
-                    return Arrays.stream(roots).anyMatch(p -> virtualFile.getPath().startsWith(p.getParent().getPath()));
-                } else if (data instanceof PsiElement) {
-                    VirtualFile virtualFile = ((PsiElement) data).getContainingFile().getVirtualFile();
-                    return Arrays.stream(roots).anyMatch(p -> virtualFile.getPath().startsWith(p.getParent().getParent().getPath()));
-                }
-
-            }*/
         } catch (Exception ignored) {
         }
         return false;

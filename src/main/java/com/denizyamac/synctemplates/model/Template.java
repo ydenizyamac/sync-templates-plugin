@@ -9,8 +9,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class Template {
-    private String templateName;
-    private String templateExtension;
+    private String[] files;
     private String group;
     private String[] synonyms;
     private String directorship;
@@ -21,6 +20,11 @@ public class Template {
 
     @JsonIgnore
     public String getTemplateUniqueName() {
-        return directorshipPath + managementPath + group.replace("/", "").replace(" ","");
+        return directorshipPath + managementPath + group.replace("/", "").replace(" ", "");
+    }
+
+    @JsonIgnore
+    public String getTemplateFileUniqueName(String file) {
+        return directorshipPath + managementPath + group.replace("/", "").replace(" ", "") + file;
     }
 }

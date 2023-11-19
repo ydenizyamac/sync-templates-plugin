@@ -3,7 +3,7 @@ package com.denizyamac.synctemplates.constants;
 import com.denizyamac.synctemplates.config.PluginSettings;
 
 public class PluginConstants {
-    public static final String BLOB_URL = "https://sdlc.yapikredi.com.tr/bitbucket/users/u075753/repos/ykt-code-templates/raw/";
+    public static final String BLOB_URL = "https://raw.githubusercontent.com/ydenizyamac/idea-templates/main/";
     public static final String CONFIG_FILE_NAME = "config.json";
     public static final String PLUGIN_ACTION_GROUP = "TemplateGeneratorActionGroup";
     public static final String PLUGIN_UPDATE_TEMPLATES_ACTION = "UpdateTemplatesAction";
@@ -38,8 +38,8 @@ public class PluginConstants {
             return PluginSettings.getRepositoryUrl() + directorshipPath + "/" + managementPath + "templates.json";
         }
 
-        public static String getFileUrl(String directorshipPath, String managementPath, String fileName, String extension) {
-            return PluginSettings.getRepositoryUrl() + directorshipPath + "/" + managementPath.replace("/", "") + "/" + fileName + "." + extension;
+        public static String getFileUrl(String directorshipPath, String managementPath, String file) {
+            return PluginSettings.getRepositoryUrl() + directorshipPath + "/" + managementPath.replace("/", "") + "/" + file;
         }
 
 
