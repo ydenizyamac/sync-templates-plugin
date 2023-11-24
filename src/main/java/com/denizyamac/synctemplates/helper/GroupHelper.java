@@ -249,11 +249,15 @@ public class GroupHelper {
         var contentSourceRoots = rootMan.getContentSourceRoots();
         var contentRoots = rootMan.getContentRoots();
         for (var root : contentSourceRoots) {
-            if (root.getPath().startsWith(currentModule) && Arrays.stream(contentRoots).noneMatch(p -> !p.getPath().equals(currentModule) && p.getPath().startsWith(currentModule) && root.getPath().startsWith(p.getPath()))) {
-                var relativePath = getRelativePath(root.getPath(), currentModule);
-                packageList.add(relativePath);
-                collectPackages(root, currentModule, packageList);
+            String s = Paths.get(currentModule).relativize(Paths.get(root.getPath())).toString();
+            if (!s.startsWith("target") && !s.startsWith("build")) {
+                if (root.getPath().startsWith(currentModule) && Arrays.stream(contentRoots).noneMatch(p -> !p.getPath().equals(currentModule) && p.getPath().startsWith(currentModule) && root.getPath().startsWith(p.getPath()))) {
+                    var relativePath = getRelativePath(root.getPath(), currentModule);
+                    packageList.add(relativePath);
+                    collectPackages(root, currentModule, packageList);
+                }
             }
+
         }
         return packageList;
     }

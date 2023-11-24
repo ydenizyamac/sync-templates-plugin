@@ -1,6 +1,6 @@
-<idea-plugin require-restart="true">
+<idea-plugin>
     <id>com.denizyamac.sync-templates-plugin</id>
-    <name>Sync Templates</name>
+    <name>YKT Booster</name>
     <vendor email="ydenizyamac@gmail.com">denizyamac</vendor>
 
     <description>Sync the template files inside of your repository</description>

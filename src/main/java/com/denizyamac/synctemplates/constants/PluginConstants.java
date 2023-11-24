@@ -3,14 +3,14 @@ package com.denizyamac.synctemplates.constants;
 import com.denizyamac.synctemplates.config.PluginSettings;
 
 public class PluginConstants {
-    public static final String BLOB_URL = "https://raw.githubusercontent.com/ydenizyamac/idea-templates/main/";
+    //public static final String BLOB_URL = "https://raw.githubusercontent.com/ydenizyamac/idea-templates/main/";
+    public static final String BLOB_URL = "https://sdlc.yapikredi.com.tr/bitbucket/users/u075753/repos/ykt-code-templates/raw/";
     public static final String CONFIG_FILE_NAME = "config.json";
     public static final String PLUGIN_ACTION_GROUP = "TemplateGeneratorActionGroup";
     public static final String PLUGIN_UPDATE_TEMPLATES_ACTION = "UpdateTemplatesAction";
     public static final String PLUGIN_UPDATE_TEMPLATES_ACTION_TEXT = "Update Templates";
     public static final String PLUGIN_SEARCH_TEMPLATES_ACTION = "SearchTemplatesAction";
     public static final String PLUGIN_SEARCH_TEMPLATES_ACTION_TEXT = "Search Templates";
-    public static String pluginMainGroupText = "YKT Booster";
     public static String actionIdPrefix = "com.denizyamac.synctemplates";
     public static final String ICON_FOLDER = "/icon/";
     public static final String PLUGIN_CONFIG_KEY = "syncTempPluginConfig";
