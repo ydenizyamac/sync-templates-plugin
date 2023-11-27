@@ -6,6 +6,7 @@ import com.intellij.ide.IdeBundle;
 import com.intellij.ide.actions.CreateFileAction;
 import com.intellij.ide.fileTemplates.FileTemplate;
 import com.intellij.ide.fileTemplates.FileTemplateManager;
+import com.intellij.ide.fileTemplates.FileTemplateParseException;
 import com.intellij.ide.fileTemplates.FileTemplateUtil;
 import com.intellij.ide.fileTemplates.actions.AttributesDefaults;
 import com.intellij.ide.fileTemplates.ui.CreateFromTemplatePanel;
@@ -24,7 +25,6 @@ import com.intellij.psi.PsiDirectory;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiManager;
 import com.intellij.util.ui.JBUI;
-import org.apache.velocity.runtime.parser.ParseException;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -36,7 +36,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class CreateMultipleFromTemplateDialog extends DialogWrapper {
     private static final Logger LOG = Logger.getInstance(com.intellij.ide.fileTemplates.ui.CreateFromTemplateDialog.class);
@@ -92,8 +91,8 @@ public class CreateMultipleFromTemplateDialog extends DialogWrapper {
             var input = myTemplateInputs.get(myItem.getFiles()[i]);
             if (input.getTInclude()) {
                 try {
-                    unsetAttributes.addAll(Arrays.stream(template.getUnsetAttributes(myDefaultProperties, project)).filter(p -> !unsetAttributes.contains(p)).collect(Collectors.toList()));
-                } catch (ParseException e) {
+                    unsetAttributes.addAll(Arrays.stream(template.getUnsetAttributes(myDefaultProperties, project)).filter(p -> !unsetAttributes.contains(p)).toList());
+                } catch (FileTemplateParseException e) {
                     showErrorDialog(e, template);
                 }
             }
@@ -200,12 +199,10 @@ public class CreateMultipleFromTemplateDialog extends DialogWrapper {
         Messages.showMessageDialog(myProject, filterMessage(e.getMessage(), template), getErrorMessage(template), Messages.getErrorIcon());
     }
 
-    @SuppressWarnings("UnstableApiUsage")
     private @NlsContexts.DialogTitle String getErrorMessage(FileTemplate template) {
         return FileTemplateUtil.findHandler(template).getErrorMessage();
     }
 
-    @SuppressWarnings("UnstableApiUsage")
     private @NlsContexts.DialogMessage @NotNull String filterMessage(@NlsContexts.DialogMessage String message, FileTemplate template) {
         if (message == null) {
             message = IdeBundle.message("dialog.message.unknown.error");

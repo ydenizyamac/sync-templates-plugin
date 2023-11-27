@@ -6,7 +6,7 @@ configurations.all {
     exclude group: 'org.slf4j', module: 'slf4j-binding'
 }
 group 'com.denizyamac'
-version '0.0.9-SNAPSHOT'
+version '0.0.9-v2023-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -25,7 +25,7 @@ dependencies {
 }
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
-    version = '2021.2'
+    version = '2023.2'
 }
 
 patchPluginXml {
