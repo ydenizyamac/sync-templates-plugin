@@ -23,9 +23,10 @@ public class PluginConfigurable extends BaseConfigurable {
     private JLabel debugPopup_enabled_label;
     private JCheckBox debugPopup_enabled_checkbox;
 
+    @SuppressWarnings("UnstableApiUsage")
     @Override
     public @NlsContexts.ConfigurableName String getDisplayName() {
-        return "Sync Templates";
+        return "YKT Booster";
     }
 
 

@@ -44,6 +44,6 @@ public class ActionOrGroup {
     }
 
     public String getTemplateFileUniqueName(String file) {
-        return uniqueName + file;
+        return uniqueName + file.replace("/", "");
     }
 }

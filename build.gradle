@@ -6,7 +6,7 @@ configurations.all {
     exclude group: 'org.slf4j', module: 'slf4j-binding'
 }
 group 'com.denizyamac'
-version '0.0.9-SNAPSHOT'
+version '0.0.10-SNAPSHOT'
 
 repositories {
     mavenCentral()

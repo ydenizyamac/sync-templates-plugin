@@ -23,8 +23,6 @@ import java.util.*;
 import java.util.function.Consumer;
 
 public class MultipleTemplatePopup {
-    private static int maxWidth;
-
     public static void showPopup(String label, String[] files, String currentDirPath, String[] options, Consumer<Map<String, TemplateInput>> action) {
         // Using a callback to retrieve selected values
         Path crDir = Paths.get(currentDirPath);
@@ -38,7 +36,7 @@ public class MultipleTemplatePopup {
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.weightx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.fill = GridBagConstraints.BOTH;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = JBUI.insets(5);
 
@@ -62,12 +60,18 @@ public class MultipleTemplatePopup {
         panel.add(commandPanel, gbc);
         gbc.gridy++;
         // Place the main panel inside a JScrollPane
-        JBScrollPane scrollPane = new JBScrollPane(panel);
+        JBScrollPane scrollPane = new JBScrollPane(panel) {
+            @Override
+            public Dimension getPreferredSize() {
+                @SuppressWarnings("OptionalGetWithoutIsPresent")
+                var longest = Arrays.stream(options).max(Comparator.comparing(String::length)).get();
+                var temp = new ComboBox<>();
+                FontMetrics fontMetrics = temp.getFontMetrics(temp.getFont());
+                return new Dimension(fontMetrics.stringWidth(longest) + 200, super.getPreferredSize().height);
+            }
+        };
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        if (scrollPane.getPreferredSize().height > 700) {
-            scrollPane.setPreferredSize(new Dimension(scrollPane.getPreferredSize().width, 700));
-        }
-        scrollPane.setPreferredSize(new Dimension(maxWidth + 200, scrollPane.getPreferredSize().height));
+
         JBPopup popup = JBPopupFactory.getInstance()
                 .createComponentPopupBuilder(scrollPane, inputPanels.get(0))
                 .setTitle(label)
@@ -75,17 +79,21 @@ public class MultipleTemplatePopup {
                 .setModalContext(true)
                 .setRequestFocus(true)
                 .setMovable(true)
-                .setDimensionServiceKey(null, "MyPopup", true)
-                //        .setCommandButton(activeComponent)
+                //.setCommandButton(activeComponent)
                 .createPopup();
+
         okButton.addActionListener((event) -> {
             //    latch.countDown();
             popup.dispose();
             action.accept(callback.getSelectedValues());
         });
-
         // Show the popup
         popup.showInCenterOf(KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusedWindow());
+
+        if (scrollPane.getSize().height > 700) {
+            scrollPane.setPreferredSize(new Dimension(scrollPane.getPreferredSize().width, 700));
+        }
+        popup.pack(true, true);
     }
 
 
@@ -108,18 +116,17 @@ public class MultipleTemplatePopup {
         panelConstraints.insets.set(5, 5, 5, 5);
         for (int i = 0; i < files.length; i++) {
             int finalI = i;
+            var crtInput = callback.getSelectedValues().get(files[finalI]);
             JPanel panel = new JPanel(new GridBagLayout());
             JBLabel fLabel = new JBLabel(files[i]);
             fLabel.setPreferredSize(new Dimension(70, fLabel.getPreferredSize().height));
             JBCheckBox fCheckBox = new JBCheckBox();
-            fCheckBox.setSelected(callback.getSelectedValues().get(files[finalI]).getTInclude());
+            fCheckBox.setSelected(crtInput.getTInclude());
 
             JPanel titlePanel = new JPanel(new GridBagLayout());
             flexibleColumn.insets.set(5, 5, 5, 5);
             titlePanel.add(fLabel, flexibleColumn);
             titlePanel.add(fCheckBox, fixedColumn);
-            //Border border = BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1);
-            //titlePanel.setBorder(border);
 
             panelConstraints.gridy = 0;
             panel.add(titlePanel, panelConstraints);
@@ -127,7 +134,7 @@ public class MultipleTemplatePopup {
             JLabel fNameLabel = new JLabel("File name:");
             fNameLabel.setPreferredSize(new Dimension(70, fNameLabel.getPreferredSize().height)); // Set fixed width
 
-            JBTextField fNameField = new JBTextField(files[i]);
+            JBTextField fNameField = new JBTextField(crtInput.getTName());
             JPanel namePanel = new JPanel(new GridBagLayout());
 
             fixedColumn.gridwidth = 1;
@@ -157,20 +164,17 @@ public class MultipleTemplatePopup {
 
 
             JComboBox<String> comboBox = new ComboBox<>(options);
-            maxWidth = comboBox.getPreferredSize().width;
-
             JLabel label = new JLabel("Package:");
             label.setPreferredSize(new Dimension(70, label.getPreferredSize().height)); // Set fixed width
             JPanel packagePanel = new JPanel(new GridBagLayout());
             fixedColumn.gridwidth = 1;
             packagePanel.add(label, fixedColumn);
             packagePanel.add(comboBox, flexibleColumn);
-            comboBox.setSelectedItem(callback.getSelectedValues().get(files[finalI]).getTPackage());
+            comboBox.setSelectedItem(crtInput.getTPackage());
             panelConstraints.gridy = 2;
             panel.add(packagePanel, panelConstraints);
-
             // Add an action listener to each combobox to update the callback
-            //comboBox.addActionListener(e -> callback.onComboBoxSelected(files[finalI], (String) comboBox.getSelectedItem()));
+            comboBox.addActionListener(e -> callback.onComboBoxSelected(files[finalI], (String) comboBox.getSelectedItem()));
             Border border = BorderFactory.createLineBorder(JBColor.GRAY, 2);
             panel.setBorder(border);
 
@@ -198,7 +202,9 @@ public class MultipleTemplatePopup {
         public Callback(String[] files, String defaultPackage) {
             selectedValues = new HashMap<>();
             for (String file : files) {
-                selectedValues.put(file, TemplateInput.builder().tName(file).tPackage(defaultPackage).tInclude(true).build());
+                var sp = file.split("/");
+                var fileName = sp[sp.length - 1];
+                selectedValues.put(file, TemplateInput.builder().tName(fileName).tPackage(defaultPackage).tInclude(true).build());
             }
 
         }
@@ -242,9 +248,6 @@ public class MultipleTemplatePopup {
     }
 
 }
-
-
-
 
 
 

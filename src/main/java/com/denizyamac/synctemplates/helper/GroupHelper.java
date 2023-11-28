@@ -80,7 +80,7 @@ public class GroupHelper {
                 }
                 assert parent != null;
                 if (parent.getChildren().stream().noneMatch(p -> path.equals(p.getPath()))) {
-                    String uniqueName = template.getDirectorship() + "_" + template.getManagement() + "_" + path;
+                    String uniqueName = template.getDirectorshipPath() + "_" + template.getManagementPath() + "_" + path;
                     String[] synonyms = null;
                     if (type == ActionOrGroupTypeEnum.ACTION) {
                         management.setManagement(template.getManagement());
@@ -89,6 +89,7 @@ public class GroupHelper {
                         uniqueName = template.getTemplateUniqueName();
                     }
                     var actionOrGroup = ActionOrGroup.create(name, uniqueName, type, new ArrayList<>(), path, synonyms, false);
+
                     actionOrGroup.setFiles(template.getFiles());
                     parent.getChildren().add(actionOrGroup);
                 }
@@ -171,7 +172,7 @@ public class GroupHelper {
         if (!roots.isEmpty()) {
             var menuName = PluginConstants.PLUGIN_ACTION_GROUP;
             var mainMenu = (DefaultActionGroup) actionManager.getAction(menuName);
-            for (var root : roots) {
+            for (var root : roots.stream().sorted(Comparator.comparing(ActionOrGroup::getName)).collect(Collectors.toList())) {
                 var action = actionManager.getAction(root.getId());
                 mainMenu.add(action);
 

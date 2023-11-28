@@ -5,10 +5,23 @@ import com.denizyamac.synctemplates.extensions.java.lang.String.StringExtension;
 import com.denizyamac.synctemplates.helper.JsonHelper;
 import com.denizyamac.synctemplates.model.Directorship;
 import com.denizyamac.synctemplates.model.Template;
+import com.denizyamac.synctemplates.service.PasswordService;
 import com.intellij.ide.util.PropertiesComponent;
 import org.bouncycastle.util.Arrays;
 
 public class PluginSettings {
+    public static void clean() {
+        //PropertiesComponent.getInstance().unsetValue(PluginConstants.BASIC_AUTH_ENABLED_KEY);
+        //PropertiesComponent.getInstance().unsetValue(PluginConstants.USERNAME_KEY);
+        PropertiesComponent.getInstance().unsetValue(PluginConstants.PASSWORD_KEY);
+        PropertiesComponent.getInstance().unsetValue(PluginConstants.REPOSITORY_URL_KEY);
+        PropertiesComponent.getInstance().unsetValue(PluginConstants.CONFIG_FILE_NAME_KEY);
+        PropertiesComponent.getInstance().unsetValue(PluginConstants.PLUGIN_PARENT_MENU_LIST_KEY);
+        PropertiesComponent.getInstance().unsetValue(PluginConstants.PLUGIN_CONFIG_KEY);
+        PropertiesComponent.getInstance().unsetValue(PluginConstants.PLUGIN_TEMPLATES_KEY);
+        PropertiesComponent.getInstance().unsetValue(PluginConstants.DEBUG_POPUP_ENABLED_KEY);
+    }
+
     public static Boolean getBasicAuthEnabled() {
         return Boolean.parseBoolean(PropertiesComponent.getInstance().getValue(PluginConstants.BASIC_AUTH_ENABLED_KEY));
     }
@@ -18,18 +31,24 @@ public class PluginSettings {
     }
 
     public static String getPassword() {
-        return PropertiesComponent.getInstance().getValue(PluginConstants.PASSWORD_KEY);
+        return PasswordService.getInstance().loadPassword();
+        //return PropertiesComponent.getInstance().getValue(PluginConstants.PASSWORD_KEY);
     }
+
     // Set the value of a property
     public static void setBasicAuthEnabled(Boolean value) {
         PropertiesComponent.getInstance().setValue(PluginConstants.BASIC_AUTH_ENABLED_KEY, String.valueOf(value));
     }  // Set the value of a property
+
     public static void setUsername(String value) {
         PropertiesComponent.getInstance().setValue(PluginConstants.USERNAME_KEY, value);
     }  // Set the value of a property
+
     public static void setPassword(String value) {
-        PropertiesComponent.getInstance().setValue(PluginConstants.PASSWORD_KEY, value);
+        PasswordService.getInstance().savePassword(value);
+        //PropertiesComponent.getInstance().setValue(PluginConstants.PASSWORD_KEY, value);
     }
+
     // Get the value of a property
     public static String getRepositoryUrl() {
         return PropertiesComponent.getInstance().getValue(PluginConstants.REPOSITORY_URL_KEY);
@@ -105,12 +124,15 @@ public class PluginSettings {
         }
         setParentMenus(list);
     }
+
     public static void setDebugPopupEnabled(Boolean value) {
         PropertiesComponent.getInstance().setValue(PluginConstants.DEBUG_POPUP_ENABLED_KEY, String.valueOf(value));
     }
+
     public static Boolean getDebugPopupEnabled() {
         return Boolean.parseBoolean(PropertiesComponent.getInstance().getValue(PluginConstants.DEBUG_POPUP_ENABLED_KEY));
     }
+
     public static void addIcon(String name, String b64) {
         PropertiesComponent.getInstance().setValue(name, b64);
     }

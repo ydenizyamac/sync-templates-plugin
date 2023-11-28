@@ -25,6 +25,6 @@ public class Template {
 
     @JsonIgnore
     public String getTemplateFileUniqueName(String file) {
-        return directorshipPath + managementPath + group.replace("/", "").replace(" ", "") + file;
+        return directorshipPath + managementPath + group.replace("/", "").replace(" ", "") + file.replace("/", "");
     }
 }
