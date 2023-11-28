@@ -20,6 +20,9 @@ public class PluginSettings {
         PropertiesComponent.getInstance().unsetValue(PluginConstants.PLUGIN_CONFIG_KEY);
         PropertiesComponent.getInstance().unsetValue(PluginConstants.PLUGIN_TEMPLATES_KEY);
         PropertiesComponent.getInstance().unsetValue(PluginConstants.DEBUG_POPUP_ENABLED_KEY);
+        PasswordService.getInstance().savePassword(null);
+        //PropertiesComponent.getInstance().setValue(PluginConstants.PASSWORD_KEY, value);
+
     }
 
     public static Boolean getBasicAuthEnabled() {

@@ -102,6 +102,7 @@ public class CreateMultipleFromTemplateDialog extends DialogWrapper {
         init();
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     public List<PsiElement> create() {
         if (ApplicationManager.getApplication().isUnitTestMode()) {
             for (var i = 0; i < myTemplates.size(); i++) {
