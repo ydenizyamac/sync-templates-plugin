@@ -5,7 +5,7 @@ import com.intellij.ide.passwordSafe.PasswordSafe;
 import com.intellij.openapi.application.ApplicationManager;
 
 public class PasswordService {
-    private static final String SERVICE_NAME = "com.denizyamac.sync-templates-plugin.PasswordService";
+    private static final String SERVICE_NAME = "com.denizyamac.yktbooster.PasswordService";
 
     public static PasswordService getInstance() {
         return ApplicationManager.getApplication().getService(PasswordService.class);

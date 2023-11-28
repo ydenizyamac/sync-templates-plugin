@@ -6,7 +6,7 @@ configurations.all {
     exclude group: 'org.slf4j', module: 'slf4j-binding'
 }
 group 'com.denizyamac'
-version '0.0.10-SNAPSHOT'
+version '0.0.11-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -83,6 +83,19 @@ patchPluginXml {
         <h2>Version 0.0.9:</h2>
         <ul>
             <li>**New feature**: Multiple template support!</li>
+        </ul>
+    </div>
+     <div>
+        <h2>Version 0.0.10:</h2>
+        <ul>
+            <li>**BUGFIX**: ui issues, file name bug, duplicated groups. Async fetching is implemented for templates to improve perf.</li>
+        </ul>
+    </div>
+    <div>
+        <h2>Version 0.0.11:</h2>
+        <ul>
+            <li>**New feature**: Treeview search is supporting synonyms for both management and templates.</li>
+            <li>**Fix**: Storing password via PasswordSafe by intellij now.</li>            
         </ul>
     </div>
 """

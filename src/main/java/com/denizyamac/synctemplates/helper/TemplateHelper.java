@@ -73,7 +73,6 @@ public class TemplateHelper {
                 FileTemplateManager fileTemplateManager = FileTemplateManager.getDefaultInstance();
                 FileTemplate[] fileTemplates = fileTemplateManager.getInternalTemplates();
                 AtomicReference<FileTemplate[]> fileTemplatesRef = new AtomicReference<>(fileTemplates);
-
                 for (var templateItem : templates) {
                     String[] files = templateItem.getFiles();
                     for (var file : files) {
@@ -97,6 +96,7 @@ public class TemplateHelper {
                         }
                     }
                 }
+
                 CompletableFuture<Void> allOf = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
                 allOf.thenRun(() -> {
                     for (CompletableFuture<List<String>> future : futures) {
