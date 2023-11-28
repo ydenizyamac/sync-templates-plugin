@@ -1,5 +1,5 @@
-<idea-plugin>
-    <id>com.denizyamac.sync-templates-plugin</id>
+<idea-plugin require-restart="true">
+    <id>com.denizyamac.yktbooster</id>
     <name>YKT Booster</name>
     <vendor email="ydenizyamac@gmail.com">denizyamac</vendor>
 
@@ -13,6 +13,7 @@
         <!--<configurationType implementation="com.denizyamac.synctemplates.config.PluginConfigurationOptions"/>-->
         <applicationConfigurable instance="com.denizyamac.synctemplates.config.PluginConfigurable"/>
         <postStartupActivity implementation="com.denizyamac.synctemplates.activity.ProjectOpenActivity"/>
+        <applicationService serviceImplementation="com.denizyamac.synctemplates.service.PasswordService"/>
     </extensions>
 
     <actions>
@@ -21,4 +22,5 @@
             <add-to-group group-id="MainMenu"/>
         </group>
     </actions>
+
 </idea-plugin>

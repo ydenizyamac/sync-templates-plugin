@@ -29,6 +29,7 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.Arrays;
+import java.util.Objects;
 
 @Getter
 public class View extends DialogWrapper {
@@ -122,6 +123,7 @@ public class View extends DialogWrapper {
         JLabel searchLabel = new JLabel("Search  ");
         searchLabel.setIcon(getIconFromResource("search.png"));
         //searchLabel.setSize(300, 40);
+        //noinspection MagicConstant
         searchLabel.setFont(searchLabel.getFont().deriveFont(20));
 
         searchLabel.setBounds(0, 0, 300, 50);
@@ -164,7 +166,9 @@ public class View extends DialogWrapper {
 
     private Icon getIconFromResource(String name) {
         var iconPath = View.class.getResource(PluginConstants.ICON_FOLDER + name);
-        return new ImageIcon(iconPath);
+        if (iconPath != null)
+            return new ImageIcon(iconPath);
+        return null;
     }
     /*public void clearTree() {
         DefaultTreeModel model = (DefaultTreeModel) tree.getModel();
@@ -236,7 +240,10 @@ public class View extends DialogWrapper {
     private void search() {
         //clearTree();
         String text = getSearchTextField().getText();
-        Template[] templates = Arrays.stream(PluginSettings.getTemplates()).filter(p -> StringUtil.containsIgnoreCase(p.getGroup(), text)).toArray(Template[]::new);
+        Template[] templates = Arrays.stream(Objects.requireNonNull(PluginSettings.getTemplates())).filter(
+                p -> StringUtil.containsIgnoreCase(p.getGroup(), text) ||
+                        (p.getSynonyms() != null && Arrays.stream(p.getSynonyms()).anyMatch(pp -> StringUtil.startsWithIgnoreCase(pp, text))) ||
+                        (p.getManagementSynonyms() != null && Arrays.stream(p.getManagementSynonyms()).anyMatch(pp -> StringUtil.startsWithIgnoreCase(pp, text)))).toArray(Template[]::new);
         setTree(templates);
         expandAll(tree, text.length() >= keyTreshold);
 

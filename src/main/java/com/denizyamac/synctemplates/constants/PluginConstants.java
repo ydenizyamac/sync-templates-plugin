@@ -11,7 +11,7 @@ public class PluginConstants {
     public static final String PLUGIN_UPDATE_TEMPLATES_ACTION_TEXT = "Update Templates";
     public static final String PLUGIN_SEARCH_TEMPLATES_ACTION = "SearchTemplatesAction";
     public static final String PLUGIN_SEARCH_TEMPLATES_ACTION_TEXT = "Search Templates";
-    public static String actionIdPrefix = "com.denizyamac.synctemplates";
+    public static String actionIdPrefix = "com.denizyamac.yktbooster";
     public static final String ICON_FOLDER = "/icon/";
     public static final String PLUGIN_CONFIG_KEY = "syncTempPluginConfig";
     public static final String PLUGIN_TEMPLATES_KEY = "syncTempPluginTemplates";

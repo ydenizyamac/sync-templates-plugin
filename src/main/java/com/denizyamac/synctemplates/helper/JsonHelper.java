@@ -1,5 +1,6 @@
 package com.denizyamac.synctemplates.helper;
 
+import com.denizyamac.synctemplates.config.PluginSettings;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -9,8 +10,6 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.ui.Messages;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-
-import javax.swing.*;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class JsonHelper {
@@ -46,7 +45,9 @@ public class JsonHelper {
                 return mapper.readValue(from, type);
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
-                ApplicationManager.getApplication().invokeLater(() -> Messages.showErrorDialog("ERROR", e.getMessage()));
+                if (PluginSettings.getDebugPopupEnabled()) {
+                    ApplicationManager.getApplication().invokeLater(() -> Messages.showErrorDialog(e.getMessage(), "ERROR"));
+                }
                 return null;
             }
         }
